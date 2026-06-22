@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deutschtest – Wie gut ist dein Deutsch?</title>
+  <meta name="description" content="Kostenloser Deutsch-Wortschatztest für alle Niveaus von A1 bis C2. Schnell, kostenlos und ohne Anmeldung."/>
+  <meta name="keywords" content="Deutschtest, German test, Deutsch lernen, Wortschatztest, A1 B1 C1 Deutsch, test your German"/>
+  <meta property="og:title" content="Deutschtest – Wie gut ist dein Deutsch?"/>
+  <meta property="og:description" content="Kostenloser Wortschatztest von A1 bis C2. Kein Anmeldung nötig."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://deutschmitjens.de"/>
+  <link rel="canonical" href="https://deutschmitjens.de"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f5f2;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 3rem 2.5rem;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b66a3c;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+      color: #1a1a1a;
+    }
+
+    p {
+      font-size: 1rem;
+      line-height: 1.65;
+      color: #555;
+      margin-bottom: 0.75rem;
+    }
+
+    .details {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin: 1.75rem 0;
+      flex-wrap: wrap;
+    }
+
+    .detail {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .detail-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .detail-label {
+      font-size: 0.78rem;
+      color: #888;
+    }
+
+    .lang-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin: 1.75rem 0 1.25rem;
+    }
+
+    .lang-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.85rem;
+      border: 2px solid #e0dbd4;
+      border-radius: 999px;
+      background: #fff;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      color: #333;
+    }
+
+    .lang-btn:hover { border-color: #b66a3c; }
+    .lang-btn.active { border-color: #b66a3c; background: #fdf4ef; font-weight: 600; }
+
+    .start-btn {
+      display: inline-block;
+      background: #b66a3c;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 0.85rem 2.5rem;
+      border-radius: 999px;
+      text-decoration: none;
+      margin-top: 0.5rem;
+      transition: background 0.15s;
+    }
+
+    .start-btn:hover { background: #9a5530; }
+
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    footer a { color: #aaa; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Kostenloser Deutschtest</div>
+    <h1>Wie gut ist dein Deutsch?</h1>
+    <p>Dieser Test misst deinen deutschen Wortschatz – von Anfänger bis Fortgeschrittene. Du hörst ein Wort und wählst das passende Bild.</p>
+    <p>Keine Anmeldung, kein Download. Einfach starten.</p>
+
+    <div class="details">
+      <div class="detail">
+        <span class="detail-value">~5 min</span>
+        <span class="detail-label">Dauer</span>
+      </div>
+      <div class="detail">
+        <span class="detail-value">A1–C2</span>
+        <span class="detail-label">Niveaus</span>
+      </div>
+      <div class="detail">
+        <span class="detail-value">7</span>
+        <span class="detail-label">Sprachen</span>
+      </div>
+    </div>
+
+    <div class="lang-grid" id="lang-grid"></div>
+
+    <a class="start-btn" id="start-btn" href="/projects/ppvt-test/?lang=de">Test starten</a>
+  </div>
+
+  <footer>
+    Ein Forschungsprojekt von <a href="https://jensschmidtke.de">Jens Schmidtke</a>
+  </footer>
+
+<script>
+const LANGS = [
+  { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
+  { code: 'en', flag: '🇬🇧', label: 'English' },
+  { code: 'fr', flag: '🇫🇷', label: 'Français' },
+  { code: 'es', flag: '🇪🇸', label: 'Español' },
+  { code: 'ar', flag: '🇸🇦', label: 'العربية' },
+  { code: 'ru', flag: '🇷🇺', label: 'Русский' },
+  { code: 'zh', flag: '🇨🇳', label: '中文' },
+]
+
+let selected = 'de'
+
+function render() {
+  const grid = document.getElementById('lang-grid')
+  grid.innerHTML = ''
+  LANGS.forEach(l => {
+    const btn = document.createElement('button')
+    btn.className = 'lang-btn' + (l.code === selected ? ' active' : '')
+    btn.innerHTML = `<span>${l.flag}</span><span>${l.label}</span>`
+    btn.onclick = () => {
+      selected = l.code
+      document.getElementById('start-btn').href = `/projects/ppvt-test/?lang=${l.code}`
+      render()
+    }
+    grid.appendChild(btn)
+  })
+}
+
+render()
+</script>
+</body>
+</html>
