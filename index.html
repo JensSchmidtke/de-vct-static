@@ -137,30 +137,28 @@
 </head>
 <body>
   <div class="card">
-    <div class="label">Kostenloser Deutschtest</div>
-    <h1>Wie gut ist dein Deutsch?</h1>
-    <p>Dieser Test misst deinen deutschen Wortschatz – von Anfänger bis Fortgeschrittene. Du hörst ein Wort und wählst das passende Bild.</p>
-    <p>Keine Anmeldung, kein Download. Einfach starten.</p>
+    <div class="label" id="ui-label"></div>
+    <h1 id="ui-title"></h1>
+    <p id="ui-desc1"></p>
+    <p id="ui-desc2"></p>
 
     <div class="details">
       <div class="detail">
         <span class="detail-value">~5 min</span>
-        <span class="detail-label">Dauer</span>
+        <span class="detail-label" id="ui-duration"></span>
       </div>
       <div class="detail">
         <span class="detail-value">A1–C2</span>
-        <span class="detail-label">Niveaus</span>
+        <span class="detail-label" id="ui-levels"></span>
       </div>
     </div>
 
     <div class="lang-grid" id="lang-grid"></div>
 
-    <a class="start-btn" id="start-btn" href="/projects/ppvt-test/?lang=de">Test starten</a>
+    <a class="start-btn" id="start-btn" href="/projects/ppvt-test/?lang=de" id="ui-start"></a>
   </div>
 
-  <footer>
-    Ein Forschungsprojekt von <a href="https://jensschmidtke.de">Jens Schmidtke</a>
-  </footer>
+  <footer id="ui-footer"></footer>
 
 <script>
 const LANGS = [
@@ -173,20 +171,37 @@ const LANGS = [
   { code: 'zh', flag: '🇨🇳', label: '中文' },
 ]
 
+const UI = {
+  de: { label: 'Kostenloser Deutschtest', title: 'Wie gut ist dein Deutsch?', desc1: 'Dieser Test misst deinen deutschen Wortschatz – von Anfänger bis Fortgeschrittene. Du hörst ein Wort und wählst das passende Bild.', desc2: 'Keine Anmeldung, kein Download. Einfach starten.', duration: 'Dauer', levels: 'Niveaus', start: 'Test starten', footer: 'Ein Forschungsprojekt von <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  en: { label: 'Free German test', title: 'How good is your German?', desc1: 'This test measures your German vocabulary – from beginner to advanced. You hear a word and choose the matching picture.', desc2: 'No registration, no download. Just start.', duration: 'Duration', levels: 'Levels', start: 'Start test', footer: 'A research project by <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  fr: { label: 'Test d\'allemand gratuit', title: 'Quel est votre niveau d\'allemand ?', desc1: 'Ce test mesure votre vocabulaire allemand – du débutant à l\'avancé. Vous entendez un mot et choisissez l\'image correspondante.', desc2: 'Sans inscription, sans téléchargement. Commencez simplement.', duration: 'Durée', levels: 'Niveaux', start: 'Commencer le test', footer: 'Un projet de recherche de <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  es: { label: 'Test de alemán gratuito', title: '¿Qué tan bueno es tu alemán?', desc1: 'Esta prueba mide tu vocabulario alemán – desde principiante hasta avanzado. Escuchas una palabra y eliges la imagen correspondiente.', desc2: 'Sin registro, sin descarga. Simplemente empieza.', duration: 'Duración', levels: 'Niveles', start: 'Iniciar prueba', footer: 'Un proyecto de investigación de <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  ar: { label: 'اختبار ألماني مجاني', title: 'ما مستواك في اللغة الألمانية؟', desc1: 'يقيس هذا الاختبار مفرداتك الألمانية – من المبتدئ إلى المتقدم. تسمع كلمة وتختار الصورة المطابقة.', desc2: 'بدون تسجيل، بدون تنزيل. فقط ابدأ.', duration: 'المدة', levels: 'المستويات', start: 'ابدأ الاختبار', footer: 'مشروع بحثي بقلم <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  ru: { label: 'Бесплатный тест по немецкому', title: 'Как хорошо вы знаете немецкий?', desc1: 'Этот тест измеряет ваш словарный запас немецкого языка – от начинающего до продвинутого. Вы слышите слово и выбираете подходящую картинку.', desc2: 'Без регистрации, без загрузки. Просто начните.', duration: 'Продолжительность', levels: 'Уровни', start: 'Начать тест', footer: 'Исследовательский проект <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
+  zh: { label: '免费德语测试', title: '你的德语水平如何？', desc1: '本测试测量您的德语词汇量——从初学者到高级。您听到一个单词并选择相应的图片。', desc2: '无需注册，无需下载。直接开始。', duration: '时长', levels: '级别', start: '开始测试', footer: '<a href="https://jensschmidtke.de">Jens Schmidtke</a> 的研究项目' },
+}
+
 let selected = 'de'
 
 function render() {
+  const u = UI[selected] || UI.de
+  document.getElementById('ui-label').textContent = u.label
+  document.getElementById('ui-title').textContent = u.title
+  document.getElementById('ui-desc1').textContent = u.desc1
+  document.getElementById('ui-desc2').textContent = u.desc2
+  document.getElementById('ui-duration').textContent = u.duration
+  document.getElementById('ui-levels').textContent = u.levels
+  document.getElementById('start-btn').textContent = u.start
+  document.getElementById('start-btn').href = `/projects/ppvt-test/?lang=${selected}`
+  document.getElementById('ui-footer').innerHTML = u.footer
+
   const grid = document.getElementById('lang-grid')
   grid.innerHTML = ''
   LANGS.forEach(l => {
     const btn = document.createElement('button')
     btn.className = 'lang-btn' + (l.code === selected ? ' active' : '')
     btn.innerHTML = `<span>${l.flag}</span><span>${l.label}</span>`
-    btn.onclick = () => {
-      selected = l.code
-      document.getElementById('start-btn').href = `/projects/ppvt-test/?lang=${l.code}`
-      render()
-    }
+    btn.onclick = () => { selected = l.code; render() }
     grid.appendChild(btn)
   })
 }
