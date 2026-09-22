@@ -74,12 +74,22 @@ const enc = s => encodeURI(s);
 const $ = id => document.getElementById(id);
 const bi = (de, en) => de + '<span class="en">' + en + '</span>';
 
-fetch('data/unit' + CH + '.json').then(r => r.json()).then(items => {
-  if (MODE === 'test') initTest(items); else initPractice(items);
+// Distractor images may come from the current unit or the immediately
+// preceding one (already-learned material), never from a later unit.
+const prevCH = parseInt(CH, 10) - 1;
+const fetchJSON = url => fetch(url).then(r => r.ok ? r.json() : []).catch(() => []);
+const wordsOf = t => new Set((t.toLowerCase().match(/[\wäöüß]{5,}/g)) || []);
+const looksAlike = (a, b) => { for (const w of wordsOf(a.de)) if (wordsOf(b.de).has(w)) return true; return false; };
+
+Promise.all([
+  fetchJSON('data/unit' + CH + '.json'),
+  prevCH >= 1 ? fetchJSON('data/unit' + prevCH + '.json') : Promise.resolve([]),
+]).then(([items, prevItems]) => {
+  if (MODE === 'test') initTest(items, prevItems); else initPractice(items, prevItems);
 });
 
 // ---------- PRACTICE MODE (batches of BATCH, correct = drop out) ----------
-function initPractice(ITEMS) {
+function initPractice(ITEMS, PREV_ITEMS) {
   let score = {}; try { score = JSON.parse(localStorage[KEY] || '{}'); } catch (e) {}
   // Some phrases (e.g. "Er spielt eine Rolle") can't be a fair quiz target in
   // practice either, but they can still turn up as a wrong-choice image.
@@ -125,7 +135,8 @@ function initPractice(ITEMS) {
     const open = batches[bi_].filter(i => !isDone(i));
     const pool = open.filter(i => i.id !== lastId); cur = rnd(pool.length ? pool : open); lastId = cur.id;
     const ok = i => i.id !== cur.id && !cur.avoid.includes(i.id);
-    const seen = batches.slice(0, bi_ + 1).flat().filter(ok);
+    const seen = batches.slice(0, bi_ + 1).flat().filter(ok)
+      .concat(PREV_ITEMS.filter(i => ok(i) && !looksAlike(cur, i)));
     dis = rnd(seen.length ? seen : ITEMS.filter(ok));
     pos = Math.random() < .5 ? 0 : 1; answered = false;
     renderGrid([pos === 0 ? cur : dis, pos === 0 ? dis : cur], 2);
@@ -175,7 +186,8 @@ function initPractice(ITEMS) {
 }
 
 // ---------- TEST MODE (random N phrases, 4-choice, tiered result) ----------
-function initTest(ITEMS) {
+function initTest(ITEMS, PREV_ITEMS) {
+  const DISTRACTOR_POOL = ITEMS.concat(PREV_ITEMS);
   // Some phrases (e.g. "Das ist eine Person") match almost any image and can't
   // be a fair quiz target, but they can still turn up as a wrong-choice image.
   const targetable = ITEMS.filter(i => !i.no_target);
@@ -194,11 +206,11 @@ function initTest(ITEMS) {
     cur = pool[idx];
     // Prefer the hand-picked distractors (see distractor_editor_unitN.html); only
     // top up with a random pick (never a look-alike) if fewer than 3 were set.
-    const byId = id => ITEMS.find(i => i.id === id);
+    const byId = id => ITEMS.find(i => i.id === id) || PREV_ITEMS.find(i => i.id === id);
     let distractors = (cur.test_distractors || []).map(byId).filter(Boolean);
     while (distractors.length < TEST_CHOICES - 1) {
       const used = new Set([cur.id, ...distractors.map(d => d.id)]);
-      const extra = rnd(ITEMS.filter(i => !used.has(i.id) && !cur.avoid.includes(i.id)));
+      const extra = rnd(DISTRACTOR_POOL.filter(i => !used.has(i.id) && !cur.avoid.includes(i.id) && !looksAlike(cur, i)));
       if (extra) distractors.push(extra); else break;
     }
     choices = [...distractors, cur].sort(() => Math.random() - .5);
