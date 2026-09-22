@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Begegnungen A1+ · Bildvokabeltrainer</title>
+<meta name="robots" content="noindex"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f7f5f2;color:#1a1a1a}
+  main{max-width:640px;margin:0 auto;padding:1.25rem 1rem 2.5rem}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:#555;margin-bottom:.6rem;gap:.5rem}
+  .top a{color:#b66a3c;text-decoration:none;font-weight:600}
+  .en{color:#999;font-weight:400}
+  #stat .en{display:block;font-size:.82em}
+  #back .en{display:block;font-size:.8em}
+  .bar{height:8px;background:#e8e4dd;border-radius:4px;overflow:hidden;margin-bottom:1.5rem}
+  .bar i{display:block;height:100%;background:#b66a3c;width:0;transition:width .2s}
+  .card{background:#fff;border-radius:16px;padding:2rem 1.5rem;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  button{font:inherit}
+  .listen-btn{background:#b66a3c;color:#fff;border:none;border-radius:999px;padding:.9rem 2rem;font-size:1.05rem;
+    font-weight:700;cursor:pointer;margin-bottom:1.5rem;line-height:1.3}
+  .listen-btn .en{display:block;font-size:.7rem;font-weight:600;opacity:.85}
+  .listen-btn:hover{background:#9a5530}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+  .grid.four{grid-template-columns:1fr 1fr}
+  .opt{background:#fff;border:4px solid #eee;border-radius:12px;overflow:hidden;cursor:pointer;padding:0}
+  .opt img{width:100%;display:block;aspect-ratio:1;object-fit:cover}
+  .opt.ok{border-color:#2a9d4a}.opt.bad{border-color:#d33}.opt.dim{opacity:.45}
+  #msg{font-weight:700;min-height:2.2rem;margin-bottom:.75rem}
+  #msg .en{display:block;font-size:.75em;font-weight:600}
+  .reveal{margin-top:1.25rem}
+  .reveal button{border:2px solid #e0dbd4;background:#fff;border-radius:999px;padding:.6rem 1.3rem;margin:0 .3rem;cursor:pointer;font-weight:600;line-height:1.25}
+  .reveal button .en{display:block;font-size:.72em;font-weight:500;color:#999}
+  .reveal button.p{background:#b66a3c;color:#fff;border-color:#b66a3c}
+  .reveal button.p .en{color:#fce4d6}
+  #sent{font-size:1.3rem;font-weight:700;margin:.9rem 0 .1rem}
+  #trans{color:#888}
+  .end{text-align:center;padding:1rem}
+  .end h2{margin-bottom:.2rem}
+  .end h2 .en{display:block;font-size:.7em;color:#999;font-weight:600;margin-top:.2rem}
+  .end p{margin-bottom:.6rem}
+  .end p .en{display:block;font-size:.85em;color:#999}
+  .end .tier{font-size:1.05rem;line-height:1.5;margin:1rem 0 1.5rem;color:#444}
+  .end .tier .en{display:block;font-size:.8em;color:#999;margin-top:.35rem}
+  .end .score{font-size:2.2rem;font-weight:800;color:#b66a3c}
+  .again-btn{display:inline-block;background:#b66a3c;color:#fff;border:none;border-radius:999px;padding:.85rem 2.2rem;
+    font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;margin:.25rem;line-height:1.3}
+  .again-btn .en{display:block;font-size:.68rem;font-weight:600;opacity:.85}
+  .home-btn{display:inline-block;border:2px solid #e0dbd4;border-radius:999px;padding:.8rem 2rem;font-size:1rem;
+    font-weight:700;cursor:pointer;text-decoration:none;color:#333;background:#fff;margin:.25rem;line-height:1.3}
+  .home-btn .en{display:block;font-size:.68rem;font-weight:600;color:#999}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><a href="index.html" id="back">← Zurück<span class="en">Back</span></a><span id="stat"></span><span></span></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div id="ov" class="card end" style="display:none"></div>
+  <div id="game" class="card">
+    <button id="play" class="listen-btn" onclick="replay()">🔊 Anhören<span class="en">Listen</span></button>
+    <div id="msg"></div>
+    <div class="grid" id="grid"></div>
+    <div class="reveal" id="reveal"></div>
+  </div>
+</main>
+<script>
+const qs = new URLSearchParams(location.search);
+const MODE = qs.get('mode') === 'test' ? 'test' : 'practice';
+const CH = qs.get('ch') || '1';
+const KEY = 'begegnungen_practice_unit' + CH;
+const NEED = 1, BATCH = 8, TEST_N = 15, TEST_CHOICES = 4;
+const enc = s => encodeURI(s);
+const $ = id => document.getElementById(id);
+const bi = (de, en) => de + '<span class="en">' + en + '</span>';
+
+fetch('data/unit' + CH + '.json').then(r => r.json()).then(items => {
+  if (MODE === 'test') initTest(items); else initPractice(items);
+});
+
+// ---------- PRACTICE MODE (batches of BATCH, correct = drop out) ----------
+function initPractice(ITEMS) {
+  let score = {}; try { score = JSON.parse(localStorage[KEY] || '{}'); } catch (e) {}
+  // Some phrases (e.g. "Er spielt eine Rolle") can't be a fair quiz target in
+  // practice either, but they can still turn up as a wrong-choice image.
+  const TARGETABLE = ITEMS.filter(i => !i.no_target_practice);
+  const batches = []; for (let i = 0; i < TARGETABLE.length; i += BATCH) batches.push(TARGETABLE.slice(i, i + BATCH));
+  const isDone = i => (score[i.id] || 0) >= NEED;
+  const firstOpen = () => batches.findIndex(b => b.some(i => !isDone(i)));
+  let bi_ = Math.max(0, firstOpen()), cur, dis, pos, audio, answered, lastId = null;
+
+  function save() { try { localStorage[KEY] = JSON.stringify(score); } catch (e) {} }
+  function stat() {
+    const n = TARGETABLE.filter(isDone).length, b = batches[bi_];
+    $('stat').innerHTML = bi('Kapitel ' + CH + ' · Etappe ' + (bi_ + 1) + '/' + batches.length + ' · ' + b.filter(isDone).length + '/' + b.length,
+      'Chapter ' + CH + ' · Stage ' + (bi_ + 1) + '/' + batches.length + ' · ' + b.filter(isDone).length + '/' + b.length);
+    $('bar').style.width = (100 * n / TARGETABLE.length) + '%';
+  }
+  function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function overlay(html) { $('ov').innerHTML = html; $('ov').style.display = 'block'; $('game').style.display = 'none'; }
+  function startBatch() { bi_ = firstOpen(); $('ov').style.display = 'none'; $('game').style.display = 'block'; next(); }
+  window.startBatch = startBatch;
+  window.resetAll = () => {
+    if (Object.keys(score).length && !confirm('Fortschritt für dieses Kapitel zurücksetzen?\n(Reset progress for this chapter?)')) return;
+    score = {}; save(); location.reload();
+  };
+
+  function next() {
+    if (firstOpen() < 0) {
+      bi_ = batches.length - 1; stat();
+      overlay('<h2>' + bi('🎉 Alle ' + TARGETABLE.length + ' Sätze geschafft!', 'All ' + TARGETABLE.length + ' sentences done!') + '</h2>' +
+        '<button class="again-btn" onclick="resetAll()">' + bi('Nochmal üben', 'Practice again') + '</button>' +
+        '<a class="home-btn" href="index.html">' + bi('Zur Übersicht', 'Back to overview') + '</a>');
+      return;
+    }
+    if (batches[bi_].every(isDone)) {
+      stat(); const nb = firstOpen();
+      overlay('<h2>' + bi('✓ Etappe ' + (bi_ + 1) + ' geschafft', 'Stage ' + (bi_ + 1) + ' done') + '</h2>' +
+        '<p>' + bi(batches[bi_].length + ' Sätze gelernt. ' + TARGETABLE.filter(isDone).length + ' von ' + TARGETABLE.length + ' insgesamt.',
+                   batches[bi_].length + ' sentences learned. ' + TARGETABLE.filter(isDone).length + ' of ' + TARGETABLE.length + ' in total.') + '</p>' +
+        '<button class="again-btn" onclick="startBatch()">' + bi('Etappe ' + (nb + 1) + ' →', 'Stage ' + (nb + 1) + ' →') + '</button>');
+      return;
+    }
+    stat();
+    const open = batches[bi_].filter(i => !isDone(i));
+    const pool = open.filter(i => i.id !== lastId); cur = rnd(pool.length ? pool : open); lastId = cur.id;
+    const ok = i => i.id !== cur.id && !cur.avoid.includes(i.id);
+    const seen = batches.slice(0, bi_ + 1).flat().filter(ok);
+    dis = rnd(seen.length ? seen : ITEMS.filter(ok));
+    pos = Math.random() < .5 ? 0 : 1; answered = false;
+    renderGrid([pos === 0 ? cur : dis, pos === 0 ? dis : cur], 2);
+    playAudio(cur);
+  }
+  function playAudio(item) { audio = new Audio(enc(rnd(item.audio))); audio.play().catch(() => {}); }
+  window.replay = () => { if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); } };
+
+  function renderGrid(list, cols) {
+    const g = $('grid'); g.className = 'grid' + (cols === 4 ? ' four' : '');
+    g.innerHTML = '';
+    $('msg').innerHTML = ''; $('reveal').innerHTML = '';
+    list.forEach((it, k) => {
+      const b = document.createElement('button'); b.className = 'opt';
+      b.innerHTML = '<img src="' + enc(it.img) + '">';
+      b.onclick = () => pickPractice(k, list);
+      g.appendChild(b);
+    });
+  }
+  function pickPractice(k, list) {
+    if (answered) return; answered = true;
+    const right = list[k].id === cur.id;
+    [...$('grid').children].forEach((el, i) => el.classList.add(list[i].id === cur.id ? 'ok' : (i === k ? 'bad' : 'dim')));
+    $('msg').innerHTML = right ? bi('✓ Richtig!', 'Correct!') : bi('✗ Nicht ganz', 'Not quite');
+    $('msg').style.color = right ? '#2a9d4a' : '#d33';
+    if (right) score[cur.id] = 1; save(); stat();
+    showReveal(() => next());
+  }
+  function showReveal(onNext) {
+    $('reveal').innerHTML = '';
+    const s = document.createElement('div'); s.id = 's';
+    const showBtn = document.createElement('button'); showBtn.innerHTML = bi('Satz anzeigen', 'Show sentence');
+    showBtn.onclick = () => { s.innerHTML = '<div id="sent">' + cur.de + '</div><div id="trans">' + cur.en + '</div>'; };
+    const nextBtn = document.createElement('button'); nextBtn.className = 'p'; nextBtn.innerHTML = bi('Weiter →', 'Next →');
+    nextBtn.onclick = onNext;
+    $('reveal').append(showBtn, ' ', nextBtn, s);
+  }
+  function begin() {
+    $('ov').style.display = 'none'; $('game').style.display = 'block';
+    startBatch();
+  }
+  $('ov').innerHTML = '<h2>' + bi('Bereit?', 'Ready?') + '</h2>' +
+    '<p>' + bi('Du hörst einen Satz und wählst das passende Bild.', 'You’ll hear a sentence and pick the matching picture.') + '</p>' +
+    '<button class="again-btn" id="beginBtn">🔊 ' + bi('Los geht’s', 'Let’s go') + '</button>';
+  $('ov').style.display = 'block'; $('game').style.display = 'none';
+  document.getElementById('beginBtn').onclick = begin;
+}
+
+// ---------- TEST MODE (random N phrases, 4-choice, tiered result) ----------
+function initTest(ITEMS) {
+  // Some phrases (e.g. "Das ist eine Person") match almost any image and can't
+  // be a fair quiz target, but they can still turn up as a wrong-choice image.
+  const targetable = ITEMS.filter(i => !i.no_target);
+  const pool = [...targetable].sort(() => Math.random() - .5).slice(0, Math.min(TEST_N, targetable.length));
+  let idx = 0, correct = 0, cur, correctPos, choices, audio, answered;
+
+  function stat() {
+    $('stat').innerHTML = bi('Kapitel ' + CH + ' · Test · Frage ' + (idx + 1) + '/' + pool.length,
+                              'Chapter ' + CH + ' · Test · Question ' + (idx + 1) + '/' + pool.length);
+    $('bar').style.width = (100 * idx / pool.length) + '%';
+  }
+  function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function next() {
+    if (idx >= pool.length) return finish();
+    stat();
+    cur = pool[idx];
+    // Prefer the hand-picked distractors (see distractor_editor_unitN.html); only
+    // top up with a random pick (never a look-alike) if fewer than 3 were set.
+    const byId = id => ITEMS.find(i => i.id === id);
+    let distractors = (cur.test_distractors || []).map(byId).filter(Boolean);
+    while (distractors.length < TEST_CHOICES - 1) {
+      const used = new Set([cur.id, ...distractors.map(d => d.id)]);
+      const extra = rnd(ITEMS.filter(i => !used.has(i.id) && !cur.avoid.includes(i.id)));
+      if (extra) distractors.push(extra); else break;
+    }
+    choices = [...distractors, cur].sort(() => Math.random() - .5);
+    correctPos = choices.findIndex(c => c.id === cur.id);
+    answered = false;
+    renderGrid(choices, 4);
+    audio = new Audio(enc(rnd(cur.audio))); audio.play().catch(() => {});
+  }
+  window.replay = () => { if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); } };
+  function renderGrid(list, cols) {
+    const g = $('grid'); g.className = 'grid' + (cols === 4 ? ' four' : '');
+    g.innerHTML = ''; $('msg').innerHTML = ''; $('reveal').innerHTML = '';
+    list.forEach((it, k) => {
+      const b = document.createElement('button'); b.className = 'opt';
+      b.innerHTML = '<img src="' + enc(it.img) + '">';
+      b.onclick = () => pick(k);
+      g.appendChild(b);
+    });
+  }
+  function pick(k) {
+    if (answered) return; answered = true;
+    const right = k === correctPos;
+    if (right) correct++;
+    [...$('grid').children].forEach((el, i) => el.classList.add(i === correctPos ? 'ok' : (i === k ? 'bad' : 'dim')));
+    $('msg').innerHTML = right ? bi('✓ Richtig!', 'Correct!') : bi('✗ Nicht ganz', 'Not quite');
+    $('msg').style.color = right ? '#2a9d4a' : '#d33';
+    $('reveal').innerHTML = '';
+    const s = document.createElement('div'); s.id = 's';
+    const showBtn = document.createElement('button'); showBtn.innerHTML = bi('Satz anzeigen', 'Show sentence');
+    showBtn.onclick = () => { s.innerHTML = '<div id="sent">' + cur.de + '</div><div id="trans">' + cur.en + '</div>'; };
+    const nextBtn = document.createElement('button'); nextBtn.className = 'p'; nextBtn.innerHTML = bi('Weiter →', 'Next →');
+    nextBtn.onclick = () => { idx++; next(); };
+    $('reveal').append(showBtn, ' ', nextBtn, s);
+  }
+
+  function finish() {
+    $('stat').innerHTML = bi('Kapitel ' + CH + ' · Test · Fertig', 'Chapter ' + CH + ' · Test · Done');
+    $('bar').style.width = '100%';
+    const pct = correct / pool.length;
+    let de, en;
+    if (pct >= 0.85) { de = 'Wow, du hast die Wörter aus Kapitel ' + CH + ' schon richtig gut drauf!'; en = 'Wow, you already have a good grasp of the Chapter ' + CH + ' words!'; }
+    else if (pct >= 0.6) { de = 'Nicht schlecht, du bist auf dem richtigen Weg!'; en = 'Not bad, you’re getting there!'; }
+    else if (pct >= 0.35) { de = 'Eine neue Sprache zu lernen braucht Übung – bleib dran!'; en = 'Learning a new language takes practice – keep at it!'; }
+    else { de = 'Es sieht so aus, als solltest du noch etwas üben – du schaffst das!'; en = 'It seems like you need to study some more – you’ve got this!'; }
+    $('game').style.display = 'none';
+    $('ov').style.display = 'block';
+    $('ov').innerHTML = '<h2>' + bi('Testergebnis', 'Test result') + '</h2><div class="score">' + correct + ' / ' + pool.length + '</div>' +
+      '<div class="tier">' + de + '<span class="en">' + en + '</span></div>' +
+      '<button class="again-btn" onclick="location.reload()">' + bi('Nochmal testen', 'Test again') + '</button>' +
+      '<a class="home-btn" href="index.html">' + bi('Zur Übersicht', 'Back to overview') + '</a>';
+  }
+  $('ov').innerHTML = '<h2>' + bi('Bereit?', 'Ready?') + '</h2>' +
+    '<p>' + bi('Du hörst einen Satz und wählst das passende Bild aus vier.', 'You’ll hear a sentence and pick the matching picture out of four.') + '</p>' +
+    '<button class="again-btn" id="beginBtn">🔊 ' + bi('Los geht’s', 'Let’s go') + '</button>';
+  $('ov').style.display = 'block'; $('game').style.display = 'none';
+  document.getElementById('beginBtn').onclick = () => { $('ov').style.display = 'none'; $('game').style.display = 'block'; next(); };
+}
+</script>
+</body>
+</html>
