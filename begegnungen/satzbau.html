@@ -162,8 +162,14 @@ $('check').onclick = () => {
     wrong++; say('no','Noch nicht.', swapped.map(d=>d.why).join('<br>'));
   } else if(ACC.has(key(answer))){
     done[item.id]=1; save();
-    const primary = key(answer)===key(item.accepted[0]);
-    say('ok','Richtig!', primary ? '' : 'Auch möglich: <i>'+up(item.accepted[0].join(' '))+'</i>');
+    // An order listed in item.marked is grammatical but not the neutral one -- say so
+    // rather than letting the student think it is the ordinary way to put it.
+    const idx = item.accepted.findIndex(a=>key(a)===key(answer));
+    const marked = (item.marked||[]).includes(idx);
+    say('ok', marked ? 'Richtig — aber ungewöhnlich.' : 'Richtig!',
+        marked ? 'That is correct German, but it is not the normal word order — it puts '
+               + 'the stress on the first word. The usual order is <i>'
+               + up(item.accepted[0].join(' ')) + '</i>.' : '');
     $('next').hidden=false; $('reveal').hidden=true; $('check').disabled=true;
     progress(); return;
   } else if(answer.length < item.chunks.length){
