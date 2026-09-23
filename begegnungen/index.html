@@ -20,6 +20,7 @@
   p.desc .en{display:block;font-size:.85rem;margin-top:.2rem}
   p.desc{margin-bottom:1.75rem}
   .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:1.75rem}
+  .mode-grid .mode-btn:last-child:nth-child(odd){grid-column:1/-1;flex-direction:row;gap:.7rem;justify-content:center}
   .mode-btn{display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:1.1rem .5rem;
     border:2px solid #e0dbd4;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s}
   .mode-btn .ic{font-size:1.6rem}
@@ -49,8 +50,8 @@
 <div class="card">
   <div class="label">Begegnungen A1+</div>
   <h1>Bildvokabeltrainer<span class="en">Picture vocabulary trainer</span></h1>
-  <p class="desc">Wähle einen Modus und ein Kapitel. Du hörst einen Satz und wählst das passende Bild.
-    <span class="en">Choose a mode and a chapter. You'll hear a sentence and pick the matching picture.</span></p>
+  <p class="desc">Wähle einen Modus und ein Kapitel.
+    <span class="en">Choose a mode and a chapter.</span></p>
 
   <div class="mode-grid" id="mode-grid">
     <button class="mode-btn active" data-mode="practice">
@@ -58,6 +59,9 @@
     </button>
     <button class="mode-btn" data-mode="test">
       <span class="ic">📝</span><span class="lbl">Testen<span class="en">Test</span></span><span class="sub">15 Sätze, mit Ergebnis<span class="en">15 sentences, with a result</span></span>
+    </button>
+    <button class="mode-btn" data-mode="satzbau">
+      <span class="ic">🧩</span><span class="lbl">Sätze bauen<span class="en">Sentence building</span></span><span class="sub">Wörter ordnen, 10 pro Runde<span class="en">put words in order, 10 per round</span></span>
     </button>
   </div>
 
@@ -98,13 +102,17 @@ function updateStart() {
     btn.disabled = false;
     btn.innerHTML = mode === 'practice'
       ? 'Üben starten<span class="en">Start practice</span>'
-      : 'Test starten<span class="en">Start test</span>';
+      : mode === 'test'
+      ? 'Test starten<span class="en">Start test</span>'
+      : 'Sätze bauen<span class="en">Start sentence building</span>';
   }
 }
 
 document.getElementById('start-btn').onclick = () => {
   if (!chapter) return;
-  location.href = `play.html?mode=${mode}&ch=${chapter}`;
+  location.href = mode === 'satzbau'
+    ? `satzbau.html?ch=${chapter}`
+    : `play.html?mode=${mode}&ch=${chapter}`;
 };
 </script>
 </body>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Begegnungen A1+ · Sätze bauen</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#f7f5f2;--fg:#1a1a1a;--muted:#8a857e;--line:#e0dbd4;--card:#fff;--slot:#efeae3;
+      --acc:#b66a3c;--ok:#2a7d4f;--ok-bg:#e9f4ed;--no:#c0392b;--no-bg:#fbecea;
+      --warn:#8a6d1f;--warn-bg:#fbf4dd}
+@media(prefers-color-scheme:dark){:root{--bg:#1b1b1d;--fg:#ececea;--muted:#9a958d;--line:#33333a;
+      --card:#26262a;--slot:#202024;--ok:#6cc08b;--ok-bg:#1d2b23;--no:#e08276;--no-bg:#2e1e1c;
+      --warn:#d8b75a;--warn-bg:#2b2617}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+     background:var(--bg);color:var(--fg);display:flex;justify-content:center;padding:20px 16px 60px}
+main{width:100%;max-width:620px}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:8px}
+.top a{color:var(--muted);text-decoration:none}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:22px}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .25s}
+.meta{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.prompt{font-size:21px;font-weight:700;line-height:1.3;margin-bottom:22px}
+.answer{min-height:62px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:11px;
+        border-radius:10px;background:var(--slot);border:1px dashed var(--line);margin-bottom:8px}
+.answer:empty::after{content:"Tippe die Teile an · tap the parts in order";color:var(--muted);font-size:13px;font-style:italic}
+.rule{height:1px;background:var(--line);margin-bottom:18px}
+.tray{display:flex;flex-wrap:wrap;gap:8px;min-height:46px;margin-bottom:20px}
+.tile{font:inherit;font-size:17px;padding:9px 15px;border-radius:8px;cursor:pointer;
+      background:var(--card);color:var(--fg);border:1px solid var(--line);box-shadow:0 1px 0 rgba(0,0,0,.04)}
+.tile:hover{border-color:var(--acc)}
+.tile.flagged{border-color:var(--no);color:var(--no);background:var(--no-bg)}
+.tile.given{border-style:dashed;color:var(--muted);cursor:default;box-shadow:none}
+.controls{display:flex;gap:9px;flex-wrap:wrap}
+button.act{font:inherit;font-weight:700;padding:10px 20px;border-radius:999px;cursor:pointer;
+           border:1px solid transparent;background:var(--acc);color:#fff}
+button.act[disabled]{opacity:.35;cursor:default}
+button.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:500}
+.feedback{margin-top:18px;padding:13px 15px;border-radius:10px;font-size:15px;display:none}
+.feedback.show{display:block}
+.feedback.ok{background:var(--ok-bg);color:var(--ok);border:1px solid currentColor}
+.feedback.no{background:var(--no-bg);color:var(--no);border:1px solid currentColor}
+.feedback.warn{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor}
+.feedback .sub{display:block;margin-top:6px;font-size:14px;opacity:.92}
+.end{text-align:center;padding:48px 8px}
+.end h2{font-size:1.4rem;margin-bottom:.6rem}
+.end p{color:var(--muted);margin-bottom:1.4rem}
+</style>
+</head>
+<body><main>
+  <div class="top"><a href="index.html">&lsaquo; Menü</a><span id="stat"></span>
+    <button class="ghost" style="padding:3px 10px;font-size:12px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer" onclick="resetAll()">Reset</button></div>
+  <div class="bar"><i id="bar"></i></div>
+
+  <div id="over" class="end" style="display:none"></div>
+  <div id="game">
+    <div class="meta" id="meta"></div>
+    <p class="prompt" id="prompt"></p>
+    <div class="answer" id="answer"></div>
+    <div class="rule"></div>
+    <div class="tray" id="tray"></div>
+    <div class="controls">
+      <button class="act" id="check" disabled>Prüfen</button>
+      <button class="act ghost" id="reset">Zurücksetzen</button>
+      <button class="act ghost" id="reveal" hidden>Lösung zeigen</button>
+      <button class="act" id="next" hidden>Weiter &rsaquo;</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+</main>
+<script>
+const CH = new URLSearchParams(location.search).get('ch') || '1';
+const KEY = 'satzbau_unit' + CH, BATCH = 10, REVEAL_AFTER = 2;
+const $ = id => document.getElementById(id);
+const norm = s => s.trim().toLowerCase();
+const key  = a => a.map(norm).join(' ');
+const up   = s => s.charAt(0).toUpperCase() + s.slice(1);
+const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+let ALL=[], done={}, batches=[], bi=0, queue=[], item=null,
+    ACC=null, DIST=null, tray=[], answer=[], wrong=0, revealed=false;
+try{ done = JSON.parse(localStorage[KEY]||'{}'); }catch(e){}
+const save = () => { try{ localStorage[KEY]=JSON.stringify(done); }catch(e){} };
+const isDone = it => !!done[it.id];
+
+fetch('data/sentences_unit'+CH+'.json').then(r=>r.json()).then(rows=>{
+  ALL = shuffle(rows.slice());
+  for(let i=0;i<ALL.length;i+=BATCH) batches.push(ALL.slice(i,i+BATCH));
+  startBatch();
+}).catch(()=>{ $('game').innerHTML='<p class="prompt">Für dieses Kapitel gibt es noch keine Sätze.</p>'; });
+
+function firstOpen(){ return batches.findIndex(b=>b.some(it=>!isDone(it))); }
+function progress(){
+  const n = ALL.filter(isDone).length;
+  $('bar').style.width = (100*n/ALL.length)+'%';
+  const b = batches[bi]||[];
+  $('stat').textContent = 'Runde '+(bi+1)+'/'+batches.length+' · '+b.filter(isDone).length+'/'+b.length;
+}
+function overlay(html){ $('over').innerHTML=html; $('over').style.display='block'; $('game').style.display='none'; }
+function startBatch(){
+  const f = firstOpen();
+  if(f < 0){ progress(); overlay('<h2>🎉 Alle '+ALL.length+' Sätze geschafft!</h2><p>All sentences done.</p><button class="act" onclick="resetAll()">Noch einmal · Again</button>'); return; }
+  bi = f; queue = shuffle(batches[bi].filter(it=>!isDone(it)));
+  $('over').style.display='none'; $('game').style.display='block';
+  nextItem();
+}
+function nextItem(){
+  queue = queue.filter(it=>!isDone(it));
+  if(!queue.length){
+    progress();
+    const nf = firstOpen();
+    if(nf < 0) return startBatch();
+    return overlay('<h2>✓ Runde '+(bi+1)+' fertig</h2><p>'+ALL.filter(isDone).length+' von '+ALL.length+' Sätzen.</p><button class="act" onclick="startBatch()">Weiter &rsaquo;</button>');
+  }
+  item = queue[0];
+  ACC  = new Set(item.accepted.map(key));
+  DIST = new Map(item.distractors.map(d=>[norm(d.text), d]));
+  $('meta').textContent = 'Kapitel '+item.lesson;
+  $('prompt').textContent = item.en;
+  $('next').hidden = true;
+  resetItem(); progress();
+}
+function resetItem(){
+  answer=[]; wrong=0; revealed=false; $('reveal').hidden=true;
+  tray = shuffle([...item.chunks, ...item.distractors.map(d=>d.text)]);
+  clearFb(); render();
+}
+function tile(text, from, lead){
+  const b=document.createElement('button');
+  b.className='tile'; b.textContent = lead ? up(text) : text;
+  if(from==='answer' && DIST.has(norm(text)) && $('feedback').classList.contains('show')) b.classList.add('flagged');
+  if(revealed){ b.classList.add('given'); return b; }
+  b.onclick=()=>{
+    if(from==='tray'){ answer.push(text); tray.splice(tray.indexOf(text),1); }
+    else { tray.push(text); answer.splice(answer.indexOf(text),1); }
+    clearFb(); render();
+  };
+  return b;
+}
+function render(){
+  $('answer').replaceChildren(...answer.map((t,i)=>tile(t,'answer',i===0)));
+  $('tray').replaceChildren(...tray.map(t=>tile(t,'tray',false)));
+  $('check').disabled = revealed || answer.length===0;
+}
+function clearFb(){ $('feedback').className='feedback'; $('feedback').innerHTML=''; }
+function say(k,h,s){ $('feedback').className='feedback show '+k; $('feedback').innerHTML='<b>'+h+'</b>'+(s?'<span class="sub">'+s+'</span>':''); }
+
+$('check').onclick = () => {
+  const has  = t => answer.some(a=>norm(a)===norm(t));
+  const used = answer.filter(t=>DIST.has(norm(t))).map(t=>DIST.get(norm(t)));
+  const doubled = used.filter(d=>has(d.replaces));
+  const rivals  = used.filter(d=>used.some(o=>o!==d && o.replaces===d.replaces));
+  const swapped = used.filter(d=>!doubled.includes(d) && !rivals.includes(d));
+
+  if(doubled.length || rivals.length){
+    wrong++;
+    say('no','Noch nicht.',
+      (doubled.length ? doubled.map(d=>'Du hast <b>'+d.text+'</b> und <b>'+d.replaces+'</b> im Satz. Only one of them belongs here.').join('<br>') : '') +
+      (rivals.length ? (doubled.length?'<br>':'')+'Du hast <b>'+[...new Set(rivals.map(d=>d.text))].join('</b> und <b>')+'</b> benutzt. The sentence needs only one of them.' : ''));
+  } else if(swapped.length){
+    wrong++; say('no','Noch nicht.', swapped.map(d=>d.why).join('<br>'));
+  } else if(ACC.has(key(answer))){
+    done[item.id]=1; save();
+    const primary = key(answer)===key(item.accepted[0]);
+    say('ok','Richtig!', primary ? '' : 'Auch möglich: <i>'+up(item.accepted[0].join(' '))+'</i>');
+    $('next').hidden=false; $('reveal').hidden=true; $('check').disabled=true;
+    progress(); return;
+  } else if(answer.length < item.chunks.length){
+    say('warn','Da fehlt noch etwas.','The sentence needs '+item.chunks.length+' parts.');
+  } else {
+    wrong++;
+    const v = answer.findIndex(t=>norm(t)===norm(item.finite));
+    if(v===0) say('no','Noch nicht.','In a normal German sentence the verb is not the first word.');
+    else if(v===answer.length-1 && answer.length>2) say('no','Noch nicht.','The verb does not belong at the end here.');
+    else say('no','Noch nicht.','This order does not say the English sentence.');
+  }
+  $('reveal').hidden = revealed || wrong < REVEAL_AFTER;
+  render();
+};
+$('reveal').onclick = () => {
+  revealed=true; answer=[...item.accepted[0]]; tray=[];
+  $('reveal').hidden=true; $('next').hidden=false;
+  say('warn','Lösung:','Der Satz kommt später noch einmal. · You will see this one again.');
+  render();
+};
+$('reset').onclick = resetItem;
+$('next').onclick = () => { if(!isDone(item)) queue.push(queue.shift()); nextItem(); };
+function resetAll(){ if(!confirm('Fortschritt für Kapitel '+CH+' löschen?')) return; done={}; save(); location.reload(); }
+window.resetAll = resetAll;
+</script>
+</body></html>
