@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Werkzeuge</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#f7f5f2;--fg:#1a1a1a;--card:#fff;--line:#e0dbd4;--sub:#888}
+@media(prefers-color-scheme:dark){:root{--bg:#161618;--fg:#ececea;--card:#26262b;--line:#33333a;--sub:#8f8a83}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--fg);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+.card{background:var(--card);border-radius:16px;padding:2.5rem 2.25rem;max-width:480px;width:100%;text-align:center;
+  box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.label{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#b66a3c;margin-bottom:.9rem}
+h1{font-size:1.6rem;margin-bottom:.25rem}
+h1 .en{display:block;font-size:.95rem;color:#999;font-weight:400;margin-top:.15rem}
+p.desc{color:var(--sub);font-size:.95rem;margin-bottom:1.6rem}
+a.tool{display:flex;align-items:center;gap:1rem;text-align:left;padding:1.1rem 1.2rem;border:2px solid var(--line);
+  border-radius:14px;text-decoration:none;color:inherit;transition:border-color .15s,background .15s}
+a.tool:hover{border-color:#b66a3c;background:#fdf4ef}
+a.tool .ic{font-size:1.8rem}
+a.tool .lbl{font-weight:700}
+a.tool .lbl .en{display:block;font-size:.72rem;font-weight:600;color:#b66a3c}
+a.tool .sub{font-size:.8rem;color:var(--sub);margin-top:.15rem}
+footer{margin-top:2rem;font-size:.8rem;color:#aaa}
+footer a{color:#aaa}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="label">Begegnungen A1+</div>
+  <h1>Werkzeuge<span class="en">Classroom tools</span></h1>
+  <p class="desc">Kleine Helfer für den Unterricht.<br><span style="color:#999">Small helpers for class.</span></p>
+  <a class="tool" href="wuerfel.html">
+    <span class="ic">🎲</span>
+    <span><span class="lbl">Würfel<span class="en">Dice</span></span>
+      <span class="sub">1 oder 2 Würfel, von 1–4 bis 1–20</span></span>
+  </a>
+</div>
+<footer><a href="index.html">&lsaquo; Zurück zum Trainer</a></footer>
+</body></html>
