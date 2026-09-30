@@ -79,7 +79,11 @@ const bi = (de, en) => de + '<span class="en">' + en + '</span>';
 
 // Distractor images may come from the current unit or the immediately
 // preceding one (already-learned material), never from a later unit.
-const prevCH = parseInt(CH, 10) - 1;
+// Chapter 4 (food vocabulary) is excluded: its images are plain food icons,
+// so pulling in scene images from chapter 3 would make wrong answers too
+// obvious. Its distractors come only from its own 29 food items.
+const NO_PREV_DISTRACTORS = new Set(['4']);
+const prevCH = NO_PREV_DISTRACTORS.has(CH) ? 0 : parseInt(CH, 10) - 1;
 const fetchJSON = url => fetch(url).then(r => r.ok ? r.json() : []).catch(() => []);
 const wordsOf = t => new Set((t.toLowerCase().match(/[\wäöüß]{5,}/g)) || []);
 const looksAlike = (a, b) => { for (const w of wordsOf(a.de)) if (wordsOf(b.de).has(w)) return true; return false; };
