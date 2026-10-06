@@ -141,7 +141,7 @@ function initPractice(ITEMS, PREV_ITEMS) {
     stat();
     const open = batches[bi_].filter(i => !isDone(i));
     const pool = open.filter(i => i.id !== lastId); cur = rnd(pool.length ? pool : open); lastId = cur.id;
-    const ok = i => i.id !== cur.id && !cur.avoid.includes(i.id);
+    const ok = i => i.id !== cur.id && !cur.avoid.includes(i.id) && !i.no_distractor;
     const seen = batches.slice(0, bi_ + 1).flat().filter(ok)
       .concat(PREV_ITEMS.filter(i => ok(i) && !looksAlike(cur, i)));
     dis = rnd(seen.length ? seen : ITEMS.filter(ok));
@@ -194,7 +194,7 @@ function initPractice(ITEMS, PREV_ITEMS) {
 
 // ---------- TEST MODE (random N phrases, 4-choice, tiered result) ----------
 function initTest(ITEMS, PREV_ITEMS) {
-  const DISTRACTOR_POOL = ITEMS.concat(PREV_ITEMS);
+  const DISTRACTOR_POOL = ITEMS.concat(PREV_ITEMS).filter(i => !i.no_distractor);
   // Some phrases (e.g. "Das ist eine Person") match almost any image and can't
   // be a fair quiz target, but they can still turn up as a wrong-choice image.
   const targetable = ITEMS.filter(i => !i.no_target);
