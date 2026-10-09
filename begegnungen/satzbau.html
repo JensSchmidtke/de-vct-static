@@ -47,6 +47,7 @@ button.ghost{background:transparent;color:var(--muted);border-color:var(--line);
 .end h2{font-size:1.4rem;margin-bottom:.6rem}
 .end p{color:var(--muted);margin-bottom:1.4rem}
 </style>
+<script src="stats.js"></script>
 </head>
 <body><main>
   <div class="top"><a href="index.html">&lsaquo; Menü</a><span id="stat"></span>
@@ -101,6 +102,7 @@ function overlay(html){ $('over').innerHTML=html; $('over').style.display='block
 function startBatch(){
   const f = firstOpen();
   if(f < 0){ progress(); overlay('<h2>🎉 Alle '+ALL.length+' Sätze geschafft!</h2><p>All sentences done.</p><button class="act" onclick="resetAll()">Noch einmal · Again</button>'); return; }
+  if(!window.__sbStarted){ window.__sbStarted = true; track('start/satzbau/ch'+CH); }
   bi = f; queue = shuffle(batches[bi].filter(it=>!isDone(it)));
   $('over').style.display='none'; $('game').style.display='block';
   nextItem();
@@ -110,7 +112,8 @@ function nextItem(){
   if(!queue.length){
     progress();
     const nf = firstOpen();
-    if(nf < 0) return startBatch();
+    if(nf < 0){ track('finish/satzbau/ch'+CH); return startBatch(); }
+    track('round-done/satzbau/ch'+CH);
     return overlay('<h2>✓ Runde '+(bi+1)+' fertig</h2><p>'+ALL.filter(isDone).length+' von '+ALL.length+' Sätzen.</p><button class="act" onclick="startBatch()">Weiter &rsaquo;</button>');
   }
   item = queue[0];

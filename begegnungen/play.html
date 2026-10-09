@@ -54,6 +54,7 @@
     font-weight:700;cursor:pointer;text-decoration:none;color:#333;background:#fff;margin:.25rem;line-height:1.3}
   .home-btn .en{display:block;font-size:.68rem;font-weight:600;color:#999}
 </style>
+<script src="stats.js"></script>
 </head>
 <body>
 <main>
@@ -170,6 +171,10 @@ function initPractice(ITEMS, PREV_ITEMS) {
     $('msg').innerHTML = right ? bi('✓ Richtig!', 'Correct!') : bi('✗ Nicht ganz', 'Not quite');
     $('msg').style.color = right ? '#2a9d4a' : '#d33';
     if (right) score[cur.id] = 1; save(); stat();
+    if (right) {
+      if (TARGETABLE.every(isDone)) track('finish/practice/ch' + CH);
+      else if (batches[bi_].every(isDone)) track('stage-done/practice/ch' + CH + '/' + (bi_ + 1));
+    }
     showReveal(() => next());
   }
   function showReveal(onNext) {
@@ -182,6 +187,7 @@ function initPractice(ITEMS, PREV_ITEMS) {
     $('reveal').append(showBtn, ' ', nextBtn, s);
   }
   function begin() {
+    track('start/practice/ch' + CH);
     $('ov').style.display = 'none'; $('game').style.display = '';
     startBatch();
   }
@@ -254,6 +260,7 @@ function initTest(ITEMS, PREV_ITEMS) {
   }
 
   function finish() {
+    track('finish/test/ch' + CH);
     $('stat').innerHTML = bi('Kapitel ' + CH + ' · Test · Fertig', 'Chapter ' + CH + ' · Test · Done');
     $('bar').style.width = '100%';
     const pct = correct / pool.length;
@@ -273,7 +280,7 @@ function initTest(ITEMS, PREV_ITEMS) {
     '<p>' + bi('Du hörst einen Satz und wählst das passende Bild aus vier.', 'You’ll hear a sentence and pick the matching picture out of four.') + '</p>' +
     '<button class="again-btn" id="beginBtn">🔊 ' + bi('Los geht’s', 'Let’s go') + '</button>';
   $('ov').style.display = ''; $('game').style.display = 'none';
-  document.getElementById('beginBtn').onclick = () => { $('ov').style.display = 'none'; $('game').style.display = ''; next(); };
+  document.getElementById('beginBtn').onclick = () => { track('start/test/ch' + CH); $('ov').style.display = 'none'; $('game').style.display = ''; next(); };
 }
 </script>
 </body>
