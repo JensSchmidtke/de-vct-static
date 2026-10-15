@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Interne Werkzeuge und Studien-Seiten, nicht fuer die Suche bestimmt
+Disallow: /projects/combined-test/
+Disallow: /combined-test/
+Disallow: /begegnungen/
+
+Sitemap: https://deutschmitjens.de/sitemap.xml
