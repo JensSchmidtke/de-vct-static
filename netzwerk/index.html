@@ -42,10 +42,11 @@ h1{font-size:22px;margin:4px 0 4px}h2{font-size:17px;margin:22px 0 10px}.sub{col
 .acts .n{border-color:var(--no);color:var(--no)}.acts .y{border-color:var(--ok);color:var(--ok)}
 .seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0 4px}.seg button{flex:1;font:inherit;font-size:15px;padding:11px 6px;border:0;background:var(--card);color:var(--fg);cursor:pointer}.seg button.on{background:var(--acc);color:#fff}
 .dirl{margin-left:auto;color:var(--mut);font-size:13px}
-.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.opt{padding:0;border:4px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);cursor:pointer;aspect-ratio:1/1;display:block}
-.opt img{width:100%;height:100%;object-fit:cover;display:block}.opt.ok{border-color:var(--ok)}.opt.bad{border-color:var(--no)}
-.opt[disabled]{cursor:default}
+.tgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;width:100%}
+.opt{position:relative;display:block;width:100%;height:0;padding:0 0 100%;border:4px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);cursor:pointer;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.opt img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block}
+.opt.ok{border-color:var(--ok)}.opt.bad{border-color:var(--no)}
+.opt.off{cursor:default;pointer-events:none}
 .bigspk{display:block;margin:6px auto 0;font-size:34px;width:84px;height:84px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .fb{text-align:center;min-height:72px;margin-top:6px}.fb .t{font-size:20px;font-weight:600}
 body.deep #about,body.deep .attr{display:none}
@@ -104,9 +105,9 @@ function test(n){
   app.querySelector('#bk').onclick=()=>chapter(n);
   app.querySelector('#sp').onclick=()=>playP(it.a);
   const tg=app.querySelector('#tg'),fb=app.querySelector('#fb');
-  opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.innerHTML=`<img alt="" src="${o.img}">`;
+  opts.forEach(o=>{const b=document.createElement('div');b.className='opt';b.setAttribute('role','button');b.innerHTML=`<img alt="" src="${o.img}">`;
    b.onclick=()=>{
-    tg.querySelectorAll('.opt').forEach((x,i)=>{x.disabled=true;if(opts[i]===it)x.classList.add('ok')});
+    tg.querySelectorAll('.opt').forEach((x,i)=>{x.classList.add('off');if(opts[i]===it)x.classList.add('ok')});
     const ok=o===it;if(!ok)b.classList.add('bad');
     fb.innerHTML=`<div class="t">${it.de}</div><div class="sub">${it.en}</div><button class="pill pri" id="nx">Weiter</button>`;
     if(ok){if(!wrong.has(it.id))first++;wrong.delete(it.id);done++}else{wrong.add(it.id);queue.push(it)}
