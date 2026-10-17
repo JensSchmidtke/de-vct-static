@@ -107,4 +107,9 @@
     <xhtml:link rel="alternate" hreflang="zh" href="https://deutschmitjens.de/info/zh/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://deutschmitjens.de/info/en/"/>
   </url>
+  <url>
+    <loc>https://deutschmitjens.de/netzwerk/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>

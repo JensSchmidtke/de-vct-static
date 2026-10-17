@@ -1,11 +1,17 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Netzwerk neu A1 – Lernkarten</title>
+<title>Netzwerk neu A1 Vokabeltrainer – kostenlose Lernkarten mit Audio</title>
+<meta name="description" content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
+<meta name="keywords" content="Netzwerk neu A1, Netzwerk A1 Vokabeltrainer, Netzwerk A1 vocab trainer, Vokabeln A1 Deutsch, Lernkarten Deutsch Englisch, Zahlentrainer Deutsch, German A1 vocabulary flashcards">
+<link rel="canonical" href="https://deutschmitjens.de/netzwerk/">
+<meta property="og:type" content="website"><meta property="og:url" content="https://deutschmitjens.de/netzwerk/">
+<meta property="og:title" content="Netzwerk neu A1 Vokabeltrainer – kostenlose Lernkarten mit Audio"><meta property="og:description" content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Netzwerk neu A1 Vokabeltrainer", "url": "https://deutschmitjens.de/netzwerk/", "description": "Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.", "applicationCategory": "EducationalApplication", "operatingSystem": "Any", "inLanguage": ["de", "en"], "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}}</script>
 <style>
 :root{--bg:#f6f5f1;--fg:#1d1d1b;--mut:#6b6b66;--card:#fff;--line:#dcdcd6;--acc:#2456c9;--ok:#1f7a45;--no:#b3261e;--dis:#e8e7e2}
 @media(prefers-color-scheme:dark){:root{--bg:#141413;--fg:#eee;--mut:#a0a09a;--card:#222220;--line:#3a3a36;--acc:#7aa2ff;--ok:#5fcf8b;--no:#ff8a80;--dis:#1c1c1a}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.4 system-ui,sans-serif;min-height:100dvh;display:flex;justify-content:center;overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.4 system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;overscroll-behavior:none}
 main{width:100%;max-width:520px;padding:18px 16px calc(24px + env(safe-area-inset-bottom))}
 h1{font-size:22px;margin:4px 0 4px}h2{font-size:17px;margin:22px 0 10px}.sub{color:var(--mut);font-size:14px;margin:0 0 14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -42,6 +48,7 @@ h1{font-size:22px;margin:4px 0 4px}h2{font-size:17px;margin:22px 0 10px}.sub{col
 .opt[disabled]{cursor:default}
 .bigspk{display:block;margin:6px auto 0;font-size:34px;width:84px;height:84px;border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .fb{text-align:center;min-height:72px;margin-top:6px}.fb .t{font-size:20px;font-weight:600}
+body.deep #about,body.deep .attr{display:none}
 .prog{color:var(--mut);font-size:14px;text-align:center}.hint{color:var(--mut);font-size:13px;text-align:center;margin-top:8px}
 .done{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;text-align:center;margin-top:16px}
 .done .big{font-size:28px;font-weight:600}
@@ -62,6 +69,7 @@ const bar=s=>`<div class="bar"><i class="k" style="width:${s.k/s.t*100}%"></i><i
 let audio=null;function play(f){try{if(audio)audio.pause();audio=new Audio('audio/'+f);audio.play().catch(()=>{})}catch(e){}}
 
 function home(){
+ document.body.classList.remove('deep');
  const s=stat(CARDS);
  app.innerHTML=`<h1>Netzwerk neu A1</h1><p class="sub">Lernkarten und Zahlentrainer</p><h2>Kapitel</h2><div class="grid" id="ch"></div><h2>Üben</h2><div class="grid"><button class="tile wide" id="num"><b>Zahlentrainer</b><small>Zahl hören und eintippen</small></button></div>`;
  const ch=app.querySelector('#ch');
@@ -85,6 +93,7 @@ function pickOptions(it){
   out.push(x);(x.grp||[]).forEach(g=>used.add(g))}
  return shuf(out)}
 function test(n){
+ document.body.classList.add('deep');
  const items=testItems();if(!items.length)return chapter(n);
  let queue=shuf(items),total=items.length,first=0,done=0,wrong=new Set();
  function next(){
@@ -107,6 +116,7 @@ function test(n){
  next()}
 
 function chapter(n){
+ document.body.classList.add('deep');
  const g=groups(),all=stat(CARDS),p=pile().length,tn=testItems().length;
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Start</button></div><h1>Kapitel ${n}</h1>
  <div class="seg" id="dir"><button data-d="de-en">Deutsch → Englisch</button><button data-d="en-de">Englisch → Deutsch</button></div>
@@ -129,6 +139,7 @@ function chapter(n){
  app.querySelector('#rst').onclick=()=>{if(confirm('Alle Bewertungen löschen?')){S={};save();chapter(n)}}}
 
 function study(list,title,n){
+ document.body.classList.add('deep');
  const queue=list.filter(c=>!S[c.id]);
  if(queue.length)return run(queue,title,n,false);
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button></div><div class="done"><div class="big">Alles bewertet</div><p>Möchtest du noch einmal alle Karten durchgehen?</p><button class="pill pri" id="again">Alle noch einmal</button> <button class="pill" id="unk">Nur unbekannte</button></div>`;
@@ -138,6 +149,7 @@ function study(list,title,n){
 
 // one round through `queue`; afterwards the unknown cards form a pile that can be repeated
 function run(queue,title,n,isRepeat){
+ document.body.classList.add('deep');
  let i=0;const total=queue.length,dirLabel=DIR==='de-en'?'DE → EN':'EN → DE';
  if(!total)return chapter(n);
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button><span class="dirl">${dirLabel}</span></div><div class="prog" id="pr"></div><div id="stage"></div><div class="acts"><button class="n" id="no">✗ Unbekannt</button><button class="y" id="yes">✓ Bekannt</button></div><p class="hint">Tippen zum Umdrehen · nach rechts wischen = bekannt · nach links = unbekannt</p>`;
@@ -185,4 +197,11 @@ function run(queue,title,n,isRepeat){
   if(e.key==='ArrowRight')rate(queue[i],'k',c,1);else if(e.key==='ArrowLeft')rate(queue[i],'u',c,-1);else if(e.key===' '||e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();c.classList.toggle('flip')}}
  render()}
 home();
-</script><p style="max-width:520px;margin:0 auto;padding:0 16px 28px;color:var(--mut);font-size:12px;text-align:center">Wortschatz nach <a href="https://www.klett-sprachen.de" style="color:inherit">Netzwerk neu A1</a> (Klett Sprachen) · inoffizielles Lernmaterial, nicht vom Verlag</p></body></html>
+</script>
+<section id="about" style="max-width:520px;margin:0 auto;padding:6px 16px 8px;color:var(--mut);font-size:14px;line-height:1.5">
+<h2 style="font-size:16px;color:var(--fg)">Vokabeltrainer zu Netzwerk neu A1</h2>
+<p>Kostenlose Lernkarten zum Wortschatz von Netzwerk neu A1: Deutsch und Englisch, mit Audio zu jedem Wort. Wörter, die du noch nicht kannst, landen auf einem Stapel und werden wiederholt. Im Bilder-Test hörst du einen Satz und wählst das passende Bild. Der Zahlentrainer übt Zahlen und Telefonnummern: hören und eintippen. Kapitel 1 ist online, weitere Kapitel folgen. Keine Anmeldung nötig.</p>
+<h2 style="font-size:16px;color:var(--fg);margin-top:14px">Netzwerk neu A1 vocabulary trainer</h2>
+<p>Free flashcards for the German vocabulary of Netzwerk neu A1: German–English with audio, a repeat pile for words you don't know yet, a picture listening test and a number trainer. Chapter 1 is available; more chapters are coming. No sign-up required.</p></section>
+<p class="attr" style="max-width:520px;margin:0 auto;padding:8px 16px 28px;color:var(--mut);font-size:12px;text-align:center">Wortschatz nach <a href="https://www.klett-sprachen.de" style="color:inherit">Netzwerk neu A1</a> (Klett Sprachen) · inoffizielles Lernmaterial, nicht vom Verlag</p>
+</body></html>
