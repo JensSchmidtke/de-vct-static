@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wortwolke</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #fff; color: #222; }
+  #login { max-width: 320px; margin: 15vh auto; display: flex; flex-direction: column; gap: 10px; padding: 0 16px; }
+  input, button { font-size: 1rem; padding: 10px; border-radius: 8px; border: 1px solid #bbb; }
+  button { cursor: pointer; background: #f0f0ee; }
+  button.primary { background: #2a5bd7; color: #fff; border-color: #2a5bd7; }
+  button.danger { color: #b00020; }
+  .err { color: #b00020; }
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #bar { display: flex; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #ddd; flex-wrap: wrap; }
+  #bar .sp { flex: 1; }
+  #main { flex: 1; display: flex; min-height: 0; }
+  #side { width: 300px; padding: 16px; border-right: 1px solid #ddd; text-align: center; display: none; }
+  #qr { display: inline-block; padding: 8px; background: #fff; }
+  #code { font-size: 3rem; font-weight: 700; letter-spacing: .15em; margin-top: 8px; }
+  #url { font-size: .8rem; word-break: break-all; color: #555; }
+  #stage { flex: 1; position: relative; min-width: 0; }
+  #cloud { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #888; font-size: 1.4rem; }
+  .closed { color: #b00020; font-weight: 600; }
+  @media (max-width: 800px) { #main { flex-direction: column; } #side { width: auto; border-right: 0; border-bottom: 1px solid #ddd; } }
+</style>
+</head>
+<body>
+<form id="login">
+  <h2>Wortwolke</h2>
+  <input id="email" type="email" placeholder="email" autocomplete="username" required>
+  <input id="pw" type="password" placeholder="password" autocomplete="current-password" required>
+  <button class="primary" type="submit" id="loginBtn">Sign in</button>
+  <div id="loginErr" class="err"></div>
+</form>
+
+<div id="app">
+  <div id="bar">
+    <select id="pick" title="Choose session"></select>
+    <input id="newCode" maxlength="10" placeholder="code (optional)" style="width:130px;text-transform:uppercase">
+    <button id="newBtn" class="primary">New session</button>
+    <button id="closeBtn">Close session</button>
+    <button id="clearBtn" class="danger">Clear</button>
+    <span id="status"></span>
+    <span class="sp"></span>
+    <span id="count"></span>
+    <button id="outBtn">Sign out</button>
+  </div>
+  <div id="main">
+    <div id="side">
+      <div id="qr"></div>
+      <div id="code"></div>
+      <div id="url"></div>
+    </div>
+    <div id="stage">
+      <canvas id="cloud"></canvas>
+      <div id="empty">Noch keine Wörter</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id)
+  const cfg = window.WOLKE_CONFIG || {}
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) {
+    $('loginErr').textContent = 'Not configured: fill in config.js.'
+    $('loginBtn').disabled = true
+    return
+  }
+  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } })
+  const blocked = new Set((cfg.BLOCKLIST || []).map((s) => s.toLowerCase()))
+
+  let session = null   // {code, is_open}
+  let words = []       // raw word strings
+  let channel = null
+  let drawTimer = null
+
+  // ---- auth (same pattern as gym-logger) ----
+  $('login').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    $('loginBtn').disabled = true
+    const { error } = await sb.auth.signInWithPassword({ email: $('email').value, password: $('pw').value })
+    $('loginBtn').disabled = false
+    $('loginErr').textContent = error ? error.message : ''
+  })
+  $('outBtn').addEventListener('click', () => sb.auth.signOut())
+  sb.auth.onAuthStateChange((_ev, s) => showApp(!!s))
+  sb.auth.getSession().then(({ data }) => showApp(!!data.session))
+
+  let appShown = false
+  function showApp(on) {
+    if (on === appShown) return
+    appShown = on
+    $('login').style.display = on ? 'none' : 'flex'
+    $('app').style.display = on ? 'flex' : 'none'
+    if (on) resumeLatest()
+    else teardown()
+  }
+
+  // ---- session handling ----
+  let all = []
+  async function refreshList(selectCode) {
+    const { data } = await sb.from('wolke_sessions').select('code,is_open,created_at').order('created_at', { ascending: false })
+    all = data || []
+    const pick = $('pick')
+    pick.innerHTML = ''
+    for (const s of all) {
+      const o = document.createElement('option')
+      o.value = s.code
+      o.textContent = s.code + ' · ' + new Date(s.created_at).toLocaleDateString() + (s.is_open ? '' : ' (closed)')
+      pick.appendChild(o)
+    }
+    if (selectCode) pick.value = selectCode
+  }
+
+  async function resumeLatest() {
+    await refreshList()
+    if (all.length) await openSession(all[0])
+    else renderSession()
+  }
+
+  $('pick').addEventListener('change', async () => {
+    const s = all.find((x) => x.code === $('pick').value)
+    if (s) { words = []; await openSession(s) }
+  })
+
+  async function openSession(s) {
+    session = s
+    renderSession()
+    await loadWords()
+    subscribe()
+  }
+
+  $('newBtn').addEventListener('click', async () => {
+    const custom = $('newCode').value.trim()
+    const { data, error } = await sb.rpc('new_wolke_session', { p_code: custom || null })
+    if (error) { alert(error.code === '23505' ? 'That code already exists.' : error.message); return }
+    $('newCode').value = ''
+    words = []
+    await refreshList(data)
+    await openSession(all.find((x) => x.code === data))
+  })
+
+  $('closeBtn').addEventListener('click', async () => {
+    if (!session) return
+    const { error } = await sb.from('wolke_sessions').update({ is_open: false }).eq('code', session.code)
+    if (error) { alert(error.message); return }
+    session.is_open = false
+    await refreshList(session.code)
+    renderSession()
+  })
+
+  $('clearBtn').addEventListener('click', async () => {
+    if (!session || !confirm('Delete all words in this session?')) return
+    const { error } = await sb.from('wolke_words').delete().eq('session_code', session.code)
+    if (error) { alert(error.message); return }
+    words = []
+    scheduleDraw()
+  })
+
+  function renderSession() {
+    $('side').style.display = session ? 'block' : 'none'
+    if (!session) { $('status').textContent = ''; return }
+    const url = new URL('index.html?s=' + session.code, location.href).href
+    $('code').textContent = session.code
+    $('url').textContent = url
+    $('qr').innerHTML = ''
+    new QRCode($('qr'), { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M })
+    $('status').innerHTML = session.is_open ? 'Open' : '<span class="closed">Closed</span>'
+    $('closeBtn').disabled = !session.is_open
+    scheduleDraw()
+  }
+
+  // ---- data ----
+  async function loadWords() {
+    const { data, error } = await sb.from('wolke_words').select('word').eq('session_code', session.code).limit(5000)
+    if (!error) words = data.map((r) => r.word)
+    scheduleDraw()
+  }
+
+  function subscribe() {
+    if (channel) sb.removeChannel(channel)
+    const code = session.code
+    channel = sb.channel('wolke-' + code)
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'wolke_words', filter: 'session_code=eq.' + code },
+        (p) => { words.push(p.new.word); scheduleDraw() })
+      .subscribe((status) => { if (status === 'SUBSCRIBED') loadWords() }) // reload after (re)connect
+  }
+
+  function teardown() {
+    if (channel) sb.removeChannel(channel)
+    channel = null; session = null; words = []
+  }
+
+  // ---- cloud ----
+  // Count by lowercase key; display the most frequent original spelling.
+  function aggregate() {
+    const map = new Map()
+    for (const w of words) {
+      const k = w.toLowerCase()
+      if (blocked.has(k)) continue
+      let e = map.get(k)
+      if (!e) { e = { n: 0, forms: new Map() }; map.set(k, e) }
+      e.n++
+      e.forms.set(w, (e.forms.get(w) || 0) + 1)
+    }
+    const out = []
+    for (const e of map.values()) {
+      let best = null, bn = 0
+      for (const [f, n] of e.forms) if (n > bn) { best = f; bn = n }
+      out.push([best, e.n])
+    }
+    return out.sort((a, b) => b[1] - a[1])
+  }
+
+  function scheduleDraw() {
+    clearTimeout(drawTimer)
+    drawTimer = setTimeout(draw, 400)  // throttle bursts
+  }
+
+  function draw() {
+    const list = aggregate()
+    $('count').textContent = words.length + ' words'
+    $('empty').style.display = list.length ? 'none' : 'flex'
+    const c = $('cloud')
+    const st = $('stage')
+    c.width = st.clientWidth; c.height = st.clientHeight
+    if (!list.length) { c.getContext('2d').clearRect(0, 0, c.width, c.height); return }
+    const max = list[0][1]
+    const base = Math.min(c.width, c.height)
+    WordCloud(c, {
+      list,
+      gridSize: Math.round(base / 80),
+      weightFactor: (n) => (base / 10) * (0.35 + 0.65 * Math.sqrt(n / max)),
+      fontFamily: 'system-ui, sans-serif',
+      fontWeight: '600',
+      color: 'random-dark',
+      backgroundColor: '#fff',
+      rotateRatio: 0.2,
+      rotationSteps: 2,
+      shrinkToFit: true,
+      drawOutOfBound: false,
+    })
+  }
+
+  window.addEventListener('resize', scheduleDraw)
+})()
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wortwolke</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px 16px; background: #f6f6f4; color: #222; }
+  main { max-width: 420px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; }
+  input { width: 100%; box-sizing: border-box; font-size: 1.2rem; padding: 12px; border: 1px solid #bbb; border-radius: 8px; }
+  #code { text-transform: uppercase; letter-spacing: .2em; text-align: center; font-size: 1.6rem; }
+  button { width: 100%; margin-top: 12px; font-size: 1.1rem; padding: 12px; border: 0; border-radius: 8px; background: #2a5bd7; color: #fff; }
+  button.link { background: none; color: #2a5bd7; margin-top: 8px; font-size: .95rem; }
+  button:disabled { opacity: .5; }
+  #msg { margin-top: 16px; min-height: 1.5em; }
+  .err { color: #b00020; } .ok { color: #1b7a3a; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <form id="f1">
+    <h1>Code eingeben</h1>
+    <input id="code" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="z. B. 4RY" required>
+    <button id="b1" type="submit">Weiter</button>
+  </form>
+
+  <form id="f2" hidden>
+    <h1>Dein Wort <small id="tag" style="color:#777"></small></h1>
+    <input id="w" maxlength="40" autocomplete="off" autocapitalize="none" placeholder="Wort eingeben" required>
+    <button id="b2" type="submit">Senden</button>
+    <button id="back" type="button" class="link">Anderen Code eingeben</button>
+  </form>
+  <div id="msg"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id)
+  const cfg = window.WOLKE_CONFIG || {}
+  function say(text, cls) { $('msg').textContent = text; $('msg').className = cls || '' }
+
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_KEY) { $('f1').hidden = true; say('Nicht konfiguriert (config.js).', 'err'); return }
+  const sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, { auth: { persistSession: false } })
+
+  // Per-browser id, used only for the per-device cap. Easy to bypass; fine for a classroom.
+  let device = null
+  try {
+    device = localStorage.getItem('wolke_device')
+    if (!device) { device = crypto.randomUUID(); localStorage.setItem('wolke_device', device) }
+  } catch (e) { device = null }
+
+  let code = ''
+
+  async function enterCode(c) {
+    c = c.trim().toUpperCase()
+    if (!c) return
+    $('b1').disabled = true
+    const { data, error } = await sb.rpc('session_status', { p_code: c })
+    $('b1').disabled = false
+    if (error) { say('Fehler. Bitte noch einmal versuchen.', 'err'); return }
+    if (data === 'none') { say('Diesen Code gibt es nicht.', 'err'); return }
+    if (data === 'closed') { say('Diese Sitzung ist beendet.', 'err'); return }
+    code = c
+    $('tag').textContent = '(' + code + ')'
+    $('f1').hidden = true; $('f2').hidden = false
+    say('')
+    $('w').focus()
+  }
+
+  $('f1').addEventListener('submit', (e) => { e.preventDefault(); enterCode($('code').value) })
+  $('back').addEventListener('click', () => { $('f2').hidden = true; $('f1').hidden = false; say(''); $('code').focus() })
+
+  $('f2').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const word = $('w').value.trim()
+    if (!word) return
+    $('b2').disabled = true
+    const { data, error } = await sb.rpc('submit_word', { p_code: code, p_word: word, p_device: device })
+    $('b2').disabled = false
+    if (error) { say('Fehler beim Senden. Bitte noch einmal versuchen.', 'err'); return }
+    if (data === 'ok') { say('Gesendet: ' + word + ' – noch ein Wort?', 'ok'); $('w').value = ''; $('w').focus() }
+    else if (data === 'closed') { say('Diese Sitzung ist beendet.', 'err'); $('f2').hidden = true; $('f1').hidden = false }
+    else if (data === 'limit') { say('Du hast die maximale Anzahl an Wörtern erreicht.', 'err') }
+    else { say('Ungültige Eingabe (max. 40 Zeichen).', 'err') }
+  })
+
+  // A link like ?s=4RY (from the QR code) skips the code step.
+  const fromUrl = new URLSearchParams(location.search).get('s')
+  if (fromUrl) { $('code').value = fromUrl; enterCode(fromUrl) }
+})()
+</script>
+</body>
+</html>
