@@ -1,5 +1,6 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Zahlentrainer</title>
+<script src="/stats.js"></script>
 <style>
 :root{--bg:#fafaf8;--fg:#1d1d1b;--mut:#6b6b66;--card:#fff;--line:#dcdcd6;--acc:#2456c9;--ok:#1f7a45;--no:#b3261e}
 @media(prefers-color-scheme:dark){:root{--bg:#161615;--fg:#eee;--mut:#a0a09a;--card:#222220;--line:#3a3a36;--acc:#7aa2ff;--ok:#5fcf8b;--no:#ff8a80}}
@@ -50,7 +51,7 @@ function check(){if(!cur)return;
   :`<div class="no">✗ Du hast ${v} geschrieben.</div><div class="big">Richtig: ${shown}</div><div class="words">${cur.words}</div>`;
  $('go').textContent='Weiter';stat()}
 function stat(){$('stat').textContent=total?`${right} von ${total} richtig`:''}
-function setRange(r){range=r;queue=[];right=0;total=0;stat();
+function setRange(r){try{window.track&&window.track('start/netzwerk/zahlentrainer-'+r)}catch(e){}range=r;queue=[];right=0;total=0;stat();
  document.querySelectorAll('#ranges button').forEach(b=>b.classList.toggle('on',b.dataset.r===r));
  $('ans').maxLength=r==='phone'?12:7;next()}
 for(const r of Object.keys(NAMES)){const b=document.createElement('button');b.textContent=NAMES[r];b.dataset.r=r;b.onclick=()=>setRange(r);$('ranges').appendChild(b)}

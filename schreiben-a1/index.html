@@ -1,6 +1,7 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Goethe A1 Schreiben – nützliche Sätze und Wörter mit Audio (DE · EN · ES)</title>
+<script src="/stats.js"></script>
 <meta name="description" content="Kostenlose Lernkarten für den Schreiben-Teil der Goethe-Prüfung A1 (Start Deutsch 1): Redemittel für E-Mails und Briefe mit deutschem Audio, Englisch und Spanisch. Free Goethe A1 writing phrases flashcards.">
 <meta name="keywords" content="Goethe A1 Schreiben, Start Deutsch 1 Schreiben, Goethe A1 writing, A1 E-Mail schreiben Redemittel, Goethe A1 Schreiben Vokabeln, escribir Goethe A1">
 <link rel="canonical" href="https://deutschmitjens.de/schreiben-a1/">
@@ -50,6 +51,9 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const setBoth=v=>{BOTH=v;try{localStorage.setItem(MKEY,v?'both':'one')}catch(e){}};
 const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
 const app=document.getElementById('app');
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9äöüß]+/g,'-').replace(/^-|-$/g,'');
+const ev=(a,n)=>{try{window.track&&window.track(a+'/'+n)}catch(e){}};
+
 // per card: S[id]={a:'k'|'u', b:'k'|'u'}  a = Deutsch -> Übersetzung, b = Übersetzung -> Deutsch
 const rt=c=>S[c.id]||{};
 const isKnown=c=>rt(c).a==='k'&&(!BOTH||rt(c).b==='k');
@@ -96,12 +100,13 @@ function study(list,title){
 function run(queue,title){
  document.body.classList.add('deep');
  if(!queue.length)return home();
+ev('start','schreiben/'+slug(title));
  let i=0;const total=queue.length;
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button><span class="dirl" id="dl"></span></div><div class="prog" id="pr"></div><div id="stage"></div><div class="acts"><button class="n" id="no">✗ Lernen</button><button class="y" id="yes">✓ Bekannt</button></div><p class="hint">Tippen zum Umdrehen · nach rechts wischen = bekannt · nach links = lernen</p>`;
  app.querySelector('#bk').onclick=()=>{window.onkeydown=null;home()};
  const stage=app.querySelector('#stage'),pr=app.querySelector('#pr'),dl=app.querySelector('#dl');
  function finish(){
-  window.onkeydown=null;
+  window.onkeydown=null;ev('finish','schreiben/'+slug(title));
   const unk=queue.filter(it=>rt(it.c)[it.d]==='u'),kn=total-unk.length;
   app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Start</button></div><div class="done"><div class="big">${unk.length?'Runde fertig':'Geschafft!'}</div><p>${kn} richtig · ${unk.length} noch nicht</p>${unk.length?`<button class="pill pri" id="rep">Lernstapel noch einmal (${unk.length})</button> `:''}<button class="pill" id="ok">Zurück</button></div>`;
   app.querySelector('#bk').onclick=app.querySelector('#ok').onclick=home;

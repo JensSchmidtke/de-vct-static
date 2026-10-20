@@ -1,6 +1,7 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Goethe A1 Sprechen – Teil 2 und Teil 3 üben (Lernkarten mit Audio)</title>
+<script src="/stats.js"></script>
 <meta name="description" content="Kostenlose Lernkarten für den Sprechen-Teil der Goethe-Prüfung A1 (Start Deutsch 1): Teil 2 mit Thema und Stichwort, Fragen stellen; Teil 3 mit Bildern, Bitten formulieren. Deutsches Audio, Englisch und Spanisch. Free Goethe A1 speaking practice flashcards.">
 <meta name="keywords" content="Goethe A1 Sprechen, Start Deutsch 1 Sprechen, Goethe A1 Sprechen Teil 2, Goethe A1 Sprechen Teil 3, Goethe A1 speaking, A1 Bitten formulieren, hablar Goethe A1">
 <link rel="canonical" href="https://deutschmitjens.de/sprechen-a1/">
@@ -45,6 +46,9 @@ let S={};try{S=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=h=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
 const app=document.getElementById('app');
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9äöüß]+/g,'-').replace(/^-|-$/g,'');
+const ev=(a,n)=>{try{window.track&&window.track(a+'/'+n)}catch(e){}};
+
 const stat=l=>{let k=0,u=0;l.forEach(c=>{if(S[c.id]==='k')k++;else if(S[c.id]==='u')u++});return{k,u,t:l.length}};
 const bar=s=>`<div class="bar"><i class="k" style="width:${s.k/Math.max(s.t,1)*100}%"></i><i class="u" style="width:${s.u/Math.max(s.t,1)*100}%"></i></div>`;
 const pile=()=>CARDS.filter(c=>S[c.id]==='u');
@@ -80,12 +84,13 @@ function study(list,title){
 function run(queue,title){
  document.body.classList.add('deep');
  if(!queue.length)return home();
+ev('start','sprechen/'+slug(title));
  let i=0;const total=queue.length;
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button></div><div class="prog" id="pr"></div><div id="stage"></div><div class="acts"><button class="n" id="no">✗ Lernen</button><button class="y" id="yes">✓ Bekannt</button></div><p class="hint">Tippen zum Umdrehen · nach rechts wischen = bekannt · nach links = lernen</p>`;
  app.querySelector('#bk').onclick=()=>{window.onkeydown=null;home()};
  const stage=app.querySelector('#stage'),pr=app.querySelector('#pr');
  function finish(){
-  window.onkeydown=null;
+  window.onkeydown=null;ev('finish','sprechen/'+slug(title));
   const unk=queue.filter(c=>S[c.id]==='u'),kn=total-unk.length;
   app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Start</button></div><div class="done"><div class="big">${unk.length?'Runde fertig':'Geschafft!'}</div><p>${kn} bekannt · ${unk.length} im Lernstapel</p>${unk.length?`<button class="pill pri" id="rep">Lernstapel noch einmal (${unk.length})</button> `:''}<button class="pill" id="ok">Zurück</button></div>`;
   app.querySelector('#bk').onclick=app.querySelector('#ok').onclick=home;

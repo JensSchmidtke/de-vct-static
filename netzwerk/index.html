@@ -1,7 +1,8 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Netzwerk neu A1 Vokabeltrainer – kostenlose Lernkarten mit Audio</title>
-<meta name="description" content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
+<meta name="description"
+<script src="/stats.js"></script> content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
 <meta name="keywords" content="Netzwerk neu A1, Netzwerk A1 Vokabeltrainer, Netzwerk A1 vocab trainer, Vokabeln A1 Deutsch, Lernkarten Deutsch Englisch, Zahlentrainer Deutsch, German A1 vocabulary flashcards">
 <link rel="canonical" href="https://deutschmitjens.de/netzwerk/">
 <meta property="og:type" content="website"><meta property="og:url" content="https://deutschmitjens.de/netzwerk/">
@@ -63,6 +64,9 @@ let S={};try{S=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=(h)=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild};
 const app=document.getElementById('app');
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9äöüß]+/g,'-').replace(/^-|-$/g,'');
+const ev=(a,n)=>{try{window.track&&window.track(a+'/'+n)}catch(e){}};
+
 const aufgabe=c=>parseInt(c.l);                       // 1a,1b,1c -> Aufgabe 1
 const groups=()=>{const g={};CARDS.forEach(c=>(g[aufgabe(c)]=g[aufgabe(c)]||[]).push(c));return g};
 const stat=list=>{let k=0,u=0;list.forEach(c=>{if(S[c.id]==='k')k++;else if(S[c.id]==='u')u++});return{k,u,t:list.length}};
@@ -96,9 +100,10 @@ function pickOptions(it){
 function test(n){
  document.body.classList.add('deep');
  const items=testItems();if(!items.length)return chapter(n);
+ ev('start','netzwerk/bilder-test');
  let queue=shuf(items),total=items.length,first=0,done=0,wrong=new Set();
  function next(){
-  if(!queue.length){app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Kapitel ${n}</button></div><div class="done"><div class="big">Test fertig</div><p>${first} von ${total} gleich beim ersten Mal richtig</p><button class="pill pri" id="ok">Zurück</button></div>`;app.querySelector('#bk').onclick=app.querySelector('#ok').onclick=()=>chapter(n);return}
+  if(!queue.length){ev('finish','netzwerk/bilder-test');app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Kapitel ${n}</button></div><div class="done"><div class="big">Test fertig</div><p>${first} von ${total} gleich beim ersten Mal richtig</p><button class="pill pri" id="ok">Zurück</button></div>`;app.querySelector('#bk').onclick=app.querySelector('#ok').onclick=()=>chapter(n);return}
   const it=queue.shift();
   const opts=pickOptions(it);
   app.innerHTML=`<div class="top"><button class="back" id="bk">‹ Kapitel ${n}</button><span class="dirl">Bilder-Test</span></div><div class="prog">${done+1} von ${total}${wrong.size?' · '+wrong.size+' noch einmal':''}</div><button class="bigspk" id="sp" aria-label="Anhören">🔊</button><div class="tgrid" id="tg"></div><div class="fb" id="fb"></div>`;
@@ -151,13 +156,14 @@ function study(list,title,n){
 // one round through `queue`; afterwards the unknown cards form a pile that can be repeated
 function run(queue,title,n,isRepeat){
  document.body.classList.add('deep');
+ ev('start','netzwerk/'+slug(title));
  let i=0;const total=queue.length,dirLabel=DIR==='de-en'?'DE → EN':'EN → DE';
  if(!total)return chapter(n);
  app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button><span class="dirl">${dirLabel}</span></div><div class="prog" id="pr"></div><div id="stage"></div><div class="acts"><button class="n" id="no">✗ Unbekannt</button><button class="y" id="yes">✓ Bekannt</button></div><p class="hint">Tippen zum Umdrehen · nach rechts wischen = bekannt · nach links = unbekannt</p>`;
  app.querySelector('#bk').onclick=()=>{window.onkeydown=null;chapter(n)};
  const stage=app.querySelector('#stage'),pr=app.querySelector('#pr');
  function finish(){
-  window.onkeydown=null;
+  window.onkeydown=null;ev('finish','netzwerk/'+slug(title));
   const unk=queue.filter(c=>S[c.id]==='u'),kn=total-unk.length;
   app.innerHTML=`<div class="top"><button class="back" id="bk">‹ ${title}</button></div><div class="done"><div class="big">${unk.length?'Runde fertig':'Geschafft!'}</div><p>${kn} bekannt · ${unk.length} unbekannt</p>${unk.length?`<p class="sub">Die unbekannten Karten liegen auf dem Stapel.</p><button class="pill pri" id="rep">Stapel noch einmal (${unk.length})</button> `:`<p class="sub">Keine unbekannten Karten in dieser Runde.</p>`}<button class="pill" id="ok">Zurück</button></div>`;
   app.querySelector('#bk').onclick=app.querySelector('#ok').onclick=()=>chapter(n);
