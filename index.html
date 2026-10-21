@@ -86,12 +86,14 @@
       color: #888;
     }
 
+    /* Equal-size buttons: three per row on desktop, two on phones; the odd last one is centred. */
     .lang-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-auto-rows: 1fr;
       gap: 0.5rem;
-      margin: 1.75rem 0 1.25rem;
+      max-width: 500px;
+      margin: 1.75rem auto 1.25rem;
     }
 
     .lang-btn {
@@ -100,7 +102,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.1rem;
-      width: 160px;
+      grid-column: span 2;
       padding: 0.5rem 0.4rem;
       border: 2px solid #e0dbd4;
       border-radius: 14px;
@@ -112,8 +114,14 @@
       color: #333;
     }
 
-    .lang-btn .top, .lang-btn .bottom { font-size: 0.72rem; color: #888; }
-    .lang-btn .name { font-size: 1.05rem; font-weight: 600; }
+    .lang-btn .sub { font-size: 0.72rem; color: #888; }
+    .lang-btn .name { font-size: 1.2rem; font-weight: 700; }
+    @media (max-width: 520px) {
+      .lang-btn { padding: 0.35rem 0.3rem; }
+      .lang-btn .name { font-size: 1rem; }
+      .lang-btn .sub { font-size: 0.68rem; }
+    }
+    .lang-btn:last-child { grid-column: 3 / span 2; }
     .lang-btn:hover { border-color: #b66a3c; }
     .lang-btn.active { border-color: #b66a3c; background: #fdf4ef; }
 
@@ -122,8 +130,8 @@
       .card { padding: 1.5rem 1.1rem; }
       h1 { font-size: 1.6rem; margin-bottom: 0.9rem; }
       .details { margin: 1.1rem 0; gap: 1.5rem; }
-      .lang-grid { margin: 1.1rem 0 1rem; gap: 0.4rem; }
-      .lang-btn { width: calc(50% - 0.2rem); }
+      .lang-grid { margin: 1.1rem 0 1rem; gap: 0.4rem; grid-template-columns: repeat(4, 1fr); }
+      .lang-btn:last-child { grid-column: 2 / span 2; }
       footer { margin-top: 1.25rem; }
     }
 
@@ -224,7 +232,8 @@ function render() {
     const btn = document.createElement('button')
     btn.className = 'lang-btn' + (l.code === selected ? ' active' : '')
     btn.lang = l.code
-    btn.innerHTML = `<span class="top" dir="auto">${l.menu}</span><span class="name" dir="auto">${l.label}</span><span class="bottom" dir="auto">${l.test}</span>`
+    const sep = l.code === 'zh' ? '：' : l.code === 'fr' ? ' : ' : ': '
+    btn.innerHTML = `<span class="name" dir="auto">${l.test}</span><span class="sub" dir="auto">${l.menu}${sep}${l.label}</span>`
     btn.onclick = () => { selected = l.code; render() }
     grid.appendChild(btn)
   })
