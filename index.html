@@ -96,20 +96,36 @@
 
     .lang-btn {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0.4rem 0.85rem;
+      justify-content: center;
+      gap: 0.1rem;
+      width: 160px;
+      padding: 0.5rem 0.4rem;
       border: 2px solid #e0dbd4;
-      border-radius: 999px;
+      border-radius: 14px;
       background: #fff;
-      font-size: 0.88rem;
+      font-family: inherit;
+      line-height: 1.25;
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
       color: #333;
     }
 
+    .lang-btn .top, .lang-btn .bottom { font-size: 0.72rem; color: #888; }
+    .lang-btn .name { font-size: 1.05rem; font-weight: 600; }
     .lang-btn:hover { border-color: #b66a3c; }
-    .lang-btn.active { border-color: #b66a3c; background: #fdf4ef; font-weight: 600; }
+    .lang-btn.active { border-color: #b66a3c; background: #fdf4ef; }
+
+    @media (max-width: 520px) {
+      body { padding: 0.75rem; }
+      .card { padding: 1.5rem 1.1rem; }
+      h1 { font-size: 1.6rem; margin-bottom: 0.9rem; }
+      .details { margin: 1.1rem 0; gap: 1.5rem; }
+      .lang-grid { margin: 1.1rem 0 1rem; gap: 0.4rem; }
+      .lang-btn { width: calc(50% - 0.2rem); }
+      footer { margin-top: 1.25rem; }
+    }
 
     .start-btn {
       display: inline-block;
@@ -165,13 +181,13 @@
 
 <script>
 const LANGS = [
-  { code: 'de', flag: '🇩🇪', label: 'Deutsch' },
-  { code: 'en', flag: '🇬🇧', label: 'English' },
-  { code: 'fr', flag: '🇫🇷', label: 'Français' },
-  { code: 'es', flag: '🇪🇸', label: 'Español' },
-  { code: 'ar', flag: '🇸🇦', label: 'العربية' },
-  { code: 'ru', flag: '🇷🇺', label: 'Русский' },
-  { code: 'zh', flag: '🇨🇳', label: '中文' },
+  { code: 'de', label: 'Deutsch', menu: 'Menüsprache', test: 'Deutschtest' },
+  { code: 'en', label: 'English', menu: 'Menu language', test: 'German test' },
+  { code: 'fr', label: 'Français', menu: 'Langue du menu', test: 'Test d\'allemand' },
+  { code: 'es', label: 'Español', menu: 'Idioma del menú', test: 'Test de alemán' },
+  { code: 'ar', label: 'العربية', menu: 'لغة القائمة', test: 'امتحان اللغة الألمانية' },
+  { code: 'ru', label: 'Русский', menu: 'Язык меню', test: 'Тест по немецкому' },
+  { code: 'zh', label: '中文', menu: '菜单语言', test: '德语测试' },
 ]
 
 const UI = {
@@ -207,7 +223,8 @@ function render() {
   LANGS.forEach(l => {
     const btn = document.createElement('button')
     btn.className = 'lang-btn' + (l.code === selected ? ' active' : '')
-    btn.innerHTML = `<span>${l.flag}</span><span>${l.label}</span>`
+    btn.lang = l.code
+    btn.innerHTML = `<span class="top" dir="auto">${l.menu}</span><span class="name" dir="auto">${l.label}</span><span class="bottom" dir="auto">${l.test}</span>`
     btn.onclick = () => { selected = l.code; render() }
     grid.appendChild(btn)
   })
