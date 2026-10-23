@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Deutschtest – Wie gut ist dein Deutsch?</title>
-  <meta name="description" content="Kostenloser Deutsch-Wortschatztest für alle Niveaus von A1 bis C2. Schnell, kostenlos und ohne Anmeldung."/>
-  <meta name="keywords" content="Deutschtest, German test, Deutsch lernen, Wortschatztest, A1 B1 C1 Deutsch, test your German"/>
-  <meta property="og:title" content="Deutschtest – Wie gut ist dein Deutsch?"/>
-  <meta property="og:description" content="Kostenloser Wortschatztest von A1 bis C2. Kein Anmeldung nötig."/>
+  <title>Deutsch mit Jens – Deutsch lernen und testen</title>
+  <meta name="description" content="Kostenlose Lernmaterialien und Tests für Deutsch: Wortschatztest, Vokabeltrainer, Goethe-A1-Vorbereitung. Ohne Anmeldung."/>
+  <meta property="og:title" content="Deutsch mit Jens – Deutsch lernen und testen"/>
+  <meta property="og:description" content="Kostenlose Lernmaterialien und Tests für Deutsch. Ohne Anmeldung."/>
   <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://deutschmitjens.de"/>
-  <link rel="canonical" href="https://deutschmitjens.de"/>
+  <meta property="og:url" content="https://deutschmitjens.de/"/>
+  <link rel="canonical" href="https://deutschmitjens.de/"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -19,22 +18,12 @@
       background: #f7f5f2;
       color: #1a1a1a;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      padding: 2.5rem 1.25rem 2rem;
     }
 
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 3rem 2.5rem;
-      max-width: 560px;
-      width: 100%;
-      text-align: center;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    }
+    main { max-width: 760px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 2.25rem; }
 
     .label {
       font-size: 0.75rem;
@@ -42,204 +31,113 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: #b66a3c;
-      margin-bottom: 1rem;
+      margin-bottom: 0.9rem;
     }
 
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      line-height: 1.2;
-      margin-bottom: 1.25rem;
-      color: #1a1a1a;
-    }
+    h1 { font-size: 2rem; line-height: 1.2; margin-bottom: 0.9rem; }
 
-    p {
-      font-size: 1rem;
-      line-height: 1.65;
-      color: #555;
-      margin-bottom: 0.75rem;
-    }
+    .intro { font-size: 1.02rem; line-height: 1.65; color: #555; max-width: 520px; margin: 0 auto; }
 
-    .details {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin: 1.75rem 0;
-      flex-wrap: wrap;
-    }
+    section { margin-bottom: 1.75rem; }
 
-    .detail {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .detail-value {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .detail-label {
+    h2 {
       font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
       color: #888;
+      margin: 0 0.25rem 0.6rem;
     }
 
-    /* Equal-size buttons: three per row on desktop, two on phones; the odd last one is centred. */
-    .lang-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-auto-rows: 1fr;
-      gap: 0.5rem;
-      max-width: 500px;
-      margin: 1.75rem auto 1.25rem;
-    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.8rem; }
 
-    .lang-btn {
+    a.card {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.1rem;
-      grid-column: span 2;
-      padding: 0.5rem 0.4rem;
-      border: 2px solid #e0dbd4;
-      border-radius: 14px;
+      gap: 0.35rem;
       background: #fff;
-      font-family: inherit;
-      line-height: 1.25;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      color: #333;
-    }
-
-    .lang-btn .sub { font-size: 0.72rem; color: #888; }
-    .lang-btn .name { font-size: 1.2rem; font-weight: 700; }
-    @media (max-width: 520px) {
-      .lang-btn { padding: 0.35rem 0.3rem; }
-      .lang-btn .name { font-size: 1rem; }
-      .lang-btn .sub { font-size: 0.68rem; }
-    }
-    .lang-btn:last-child { grid-column: 3 / span 2; }
-    .lang-btn:hover { border-color: #b66a3c; }
-    .lang-btn.active { border-color: #b66a3c; background: #fdf4ef; }
-
-    @media (max-width: 520px) {
-      body { padding: 0.75rem; }
-      .card { padding: 1.5rem 1.1rem; }
-      h1 { font-size: 1.6rem; margin-bottom: 0.9rem; }
-      .details { margin: 1.1rem 0; gap: 1.5rem; }
-      .lang-grid { margin: 1.1rem 0 1rem; gap: 0.4rem; grid-template-columns: repeat(4, 1fr); }
-      .lang-btn:last-child { grid-column: 2 / span 2; }
-      footer { margin-top: 1.25rem; }
-    }
-
-    .start-btn {
-      display: inline-block;
-      background: #b66a3c;
-      color: #fff;
-      font-size: 1.05rem;
-      font-weight: 700;
-      padding: 0.85rem 2.5rem;
-      border-radius: 999px;
+      border: 2px solid #e0dbd4;
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem;
       text-decoration: none;
-      margin-top: 0.5rem;
-      transition: background 0.15s;
+      color: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    .start-btn:hover { background: #9a5530; }
+    a.card:hover, a.card:focus-visible { border-color: #b66a3c; box-shadow: 0 4px 18px rgba(0,0,0,0.07); outline: none; }
 
-    footer {
-      margin-top: 2.5rem;
-      font-size: 0.8rem;
-      color: #aaa;
-    }
+    .card .name { font-size: 1.1rem; font-weight: 700; }
+    .card .desc { font-size: 0.92rem; line-height: 1.5; color: #666; }
+    .card .meta { font-size: 0.75rem; color: #b66a3c; font-weight: 600; margin-top: auto; padding-top: 0.3rem; }
 
+    footer { text-align: center; margin-top: 2.5rem; font-size: 0.8rem; color: #aaa; }
     footer a { color: #aaa; }
-.infolinks{margin-top:.75rem;display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;font-size:.8rem;opacity:.75}
-.infolinks a{color:inherit}
+
+    @media (max-width: 520px) {
+      body { padding: 1.5rem 0.75rem 1.5rem; }
+      h1 { font-size: 1.6rem; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="label" id="ui-label"></div>
-    <h1 id="ui-title"></h1>
-    <p id="ui-desc1"></p>
-    <p id="ui-desc2"></p>
+<main>
+  <header>
+    <div class="label">Deutsch mit Jens</div>
+    <h1>Deutsch lernen und testen</h1>
+    <p class="intro">Kostenlose Lernmaterialien und Tests für Deutsch. Keine Anmeldung, kein Download.</p>
+  </header>
 
-    <div class="details">
-      <div class="detail">
-        <span class="detail-value">~5 min</span>
-        <span class="detail-label" id="ui-duration"></span>
-      </div>
-      <div class="detail">
-        <span class="detail-value">A1–C2</span>
-        <span class="detail-label" id="ui-levels"></span>
-      </div>
+  <section>
+    <h2>Testen</h2>
+    <div class="grid">
+      <a class="card" href="https://deutschpegel.de/">
+        <span class="name">Deutschtest</span>
+        <span class="desc">Wie gut ist dein Deutsch? Kostenloser Wortschatztest von A1 bis C2: Du hörst ein Wort und wählst das passende Bild.</span>
+        <span class="meta">ca. 5 Minuten · deutschpegel.de</span>
+      </a>
     </div>
+  </section>
 
-    <div class="lang-grid" id="lang-grid"></div>
+  <section>
+    <h2>Wortschatz üben</h2>
+    <div class="grid">
+      <a class="card" href="/projects/vocab-app/">
+        <span class="name">Deutsch A1</span>
+        <span class="desc">Wortschatz für Start Deutsch 1 mit Bildern, Audio und Tests.</span>
+        <span class="meta">A1</span>
+      </a>
+      <a class="card" href="/begegnungen/">
+        <span class="name">Begegnungen A1+</span>
+        <span class="desc">Bildvokabeltrainer: üben, testen und Sätze bauen, kapitelweise.</span>
+        <span class="meta">A1+</span>
+      </a>
+      <a class="card" href="/netzwerk/">
+        <span class="name">Netzwerk neu A1</span>
+        <span class="desc">Lernkarten mit Audio, Bilder-Test und Zahlentrainer. Kapitel 1 ist online.</span>
+        <span class="meta">A1</span>
+      </a>
+    </div>
+  </section>
 
-    <a class="start-btn" id="start-btn" href="/projects/ppvt-test/?lang=de"></a>
-  </div>
+  <section>
+    <h2>Goethe-Prüfung A1 vorbereiten</h2>
+    <div class="grid">
+      <a class="card" href="/schreiben-a1/">
+        <span class="name">Schreiben</span>
+        <span class="desc">Nützliche Sätze und Wörter für E-Mails und Briefe, mit Audio.</span>
+        <span class="meta">A1 · Deutsch, Englisch, Spanisch</span>
+      </a>
+      <a class="card" href="/sprechen-a1/">
+        <span class="name">Sprechen</span>
+        <span class="desc">Teil 2 und Teil 3 üben, mit Lernkarten und Audio.</span>
+        <span class="meta">A1</span>
+      </a>
+    </div>
+  </section>
 
-  <footer id="ui-footer"></footer>
-<nav class="infolinks"><a id="info-link" href="/info/de/">Über den Test</a></nav>
+</main>
 
-<script>
-const LANGS = [
-  { code: 'de', label: 'Deutsch', menu: 'Menüsprache', test: 'Deutschtest' },
-  { code: 'en', label: 'English', menu: 'Menu language', test: 'German test' },
-  { code: 'fr', label: 'Français', menu: 'Langue du menu', test: 'Test d\'allemand' },
-  { code: 'es', label: 'Español', menu: 'Idioma del menú', test: 'Test de alemán' },
-  { code: 'ar', label: 'العربية', menu: 'لغة القائمة', test: 'امتحان اللغة الألمانية' },
-  { code: 'ru', label: 'Русский', menu: 'Язык меню', test: 'Тест по немецкому' },
-  { code: 'zh', label: '中文', menu: '菜单语言', test: '德语测试' },
-]
-
-const UI = {
-  de: { info: 'Über den Test', label: 'Kostenloser Deutschtest', title: 'Wie gut ist dein Deutsch?', desc1: 'Dieser Test misst deinen deutschen Wortschatz – von Anfänger bis Fortgeschrittene. Du hörst ein Wort und wählst das passende Bild.', desc2: 'Keine Anmeldung, kein Download. Einfach starten.', duration: 'Dauer', levels: 'Niveaus', start: 'Test starten', footer: 'Ein Forschungsprojekt von <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  en: { info: 'About the test', label: 'Free German test', title: 'How good is your German?', desc1: 'This test measures your German vocabulary – from beginner to advanced. You hear a word and choose the matching picture.', desc2: 'No registration, no download. Just start.', duration: 'Duration', levels: 'Levels', start: 'Start test', footer: 'A research project by <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  fr: { info: 'À propos du test', label: 'Test d\'allemand gratuit', title: 'Quel est votre niveau d\'allemand ?', desc1: 'Ce test mesure votre vocabulaire allemand – du débutant à l\'avancé. Vous entendez un mot et choisissez l\'image correspondante.', desc2: 'Sans inscription, sans téléchargement. Commencez simplement.', duration: 'Durée', levels: 'Niveaux', start: 'Commencer le test', footer: 'Un projet de recherche de <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  es: { info: 'Sobre el test', label: 'Test de alemán gratuito', title: '¿Qué tan bueno es tu alemán?', desc1: 'Esta prueba mide tu vocabulario alemán – desde principiante hasta avanzado. Escuchas una palabra y eliges la imagen correspondiente.', desc2: 'Sin registro, sin descarga. Simplemente empieza.', duration: 'Duración', levels: 'Niveles', start: 'Iniciar prueba', footer: 'Un proyecto de investigación de <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  ar: { info: 'حول الاختبار', label: 'اختبار ألماني مجاني', title: 'ما مستواك في اللغة الألمانية؟', desc1: 'يقيس هذا الاختبار مفرداتك الألمانية – من المبتدئ إلى المتقدم. تسمع كلمة وتختار الصورة المطابقة.', desc2: 'بدون تسجيل، بدون تنزيل. فقط ابدأ.', duration: 'المدة', levels: 'المستويات', start: 'ابدأ الاختبار', footer: 'مشروع بحثي بقلم <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  ru: { info: 'О тесте', label: 'Бесплатный тест по немецкому', title: 'Как хорошо вы знаете немецкий?', desc1: 'Этот тест измеряет ваш словарный запас немецкого языка – от начинающего до продвинутого. Вы слышите слово и выбираете подходящую картинку.', desc2: 'Без регистрации, без загрузки. Просто начните.', duration: 'Продолжительность', levels: 'Уровни', start: 'Начать тест', footer: 'Исследовательский проект <a href="https://jensschmidtke.de">Jens Schmidtke</a>' },
-  zh: { info: '关于本测试', label: '免费德语测试', title: '你的德语水平如何？', desc1: '本测试测量您的德语词汇量——从初学者到高级。您听到一个单词并选择相应的图片。', desc2: '无需注册，无需下载。直接开始。', duration: '时长', levels: '级别', start: '开始测试', footer: '<a href="https://jensschmidtke.de">Jens Schmidtke</a> 的研究项目' },
-}
-
-let selected = 'de'
-
-function render() {
-  const u = UI[selected] || UI.de
-  document.getElementById('ui-label').textContent = u.label
-  document.getElementById('ui-title').textContent = u.title
-  document.getElementById('ui-desc1').textContent = u.desc1
-  document.getElementById('ui-desc2').textContent = u.desc2
-  document.getElementById('ui-duration').textContent = u.duration
-  document.getElementById('ui-levels').textContent = u.levels
-  document.getElementById('start-btn').textContent = u.start
-  document.getElementById('start-btn').href = `/projects/ppvt-test/?lang=${selected}`
-  document.getElementById('ui-footer').innerHTML = u.footer
-  const info = document.getElementById('info-link')
-  info.href = `/info/${selected}/`
-  info.hreflang = selected
-  info.textContent = u.info
-
-  const grid = document.getElementById('lang-grid')
-  grid.innerHTML = ''
-  LANGS.forEach(l => {
-    const btn = document.createElement('button')
-    btn.className = 'lang-btn' + (l.code === selected ? ' active' : '')
-    btn.lang = l.code
-    const sep = l.code === 'zh' ? '：' : l.code === 'fr' ? ' : ' : ': '
-    btn.innerHTML = `<span class="name" dir="auto">${l.test}</span><span class="sub" dir="auto">${l.menu}${sep}${l.label}</span>`
-    btn.onclick = () => { selected = l.code; render() }
-    grid.appendChild(btn)
-  })
-}
-
-render()
-</script>
+<footer>Ein Projekt von <a href="https://jensschmidtke.de">Jens Schmidtke</a></footer>
+<script src="/stats.js"></script>
 </body>
 </html>
