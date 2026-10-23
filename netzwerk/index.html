@@ -1,8 +1,8 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Netzwerk neu A1 Vokabeltrainer – kostenlose Lernkarten mit Audio</title>
-<meta name="description"
-<script src="/stats.js"></script> content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
+<script src="/stats.js"></script>
+<meta name="description" content="Kostenloser Vokabeltrainer zu Netzwerk neu A1: Lernkarten Deutsch–Englisch mit Aussprache, Bilder-Hörtest und Zahlentrainer. Kapitel 1 online, ohne Anmeldung. Free German A1 vocabulary trainer.">
 <meta name="keywords" content="Netzwerk neu A1, Netzwerk A1 Vokabeltrainer, Netzwerk A1 vocab trainer, Vokabeln A1 Deutsch, Lernkarten Deutsch Englisch, Zahlentrainer Deutsch, German A1 vocabulary flashcards">
 <link rel="canonical" href="https://deutschmitjens.de/netzwerk/">
 <meta property="og:type" content="website"><meta property="og:url" content="https://deutschmitjens.de/netzwerk/">
@@ -76,7 +76,7 @@ let audio=null;function play(f){try{if(audio)audio.pause();audio=new Audio('audi
 function home(){
  document.body.classList.remove('deep');
  const s=stat(CARDS);
- app.innerHTML=`<h1>Netzwerk neu A1</h1><p class="sub">Lernkarten und Zahlentrainer</p><h2>Kapitel</h2><div class="grid" id="ch"></div><h2>Üben</h2><div class="grid"><button class="tile wide" id="num"><b>Zahlentrainer</b><small>Zahl hören und eintippen</small></button></div>`;
+ app.innerHTML=`<h1>Netzwerk neu A1</h1><p class="sub">Lernkarten und Zahlentrainer</p><p class="sub">Wortschatz passend zu den Kapiteln von Netzwerk neu</p><h2>Kapitel</h2><div class="grid" id="ch"></div><h2>Üben</h2><div class="grid"><button class="tile wide" id="num"><b>Zahlentrainer</b><small>Zahl hören und eintippen</small></button></div>`;
  const ch=app.querySelector('#ch');
  CHAPTERS.forEach(c=>{const b=$(`<button class="tile" ${c.on?'':'disabled'}><b>Kapitel ${c.n}</b><small>${c.on?s.t+' Karten · '+(s.u)+' unbekannt':'bald verfügbar'}</small>${c.on?bar(s):''}</button>`);
   if(c.on)b.onclick=()=>chapter(c.n);ch.appendChild(b)});
