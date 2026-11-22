@@ -122,15 +122,15 @@
         /* ---------- my grid ---------- */
 
         function pool() { return bank.filter(function (w) { return w[2] <= level; }); }
-        function draw(wantGender) {
+        function draw(wantGender, notGender) {      // notGender: not of the gender just replaced
           var on = {}; cells.forEach(function (w) { if (w) on[w[0]] = true; });
-          var p = pool().filter(function (w) { return !on[w[0]] && (!wantGender || w[1] === wantGender); });
+          var p = pool().filter(function (w) { return !on[w[0]] && (!wantGender || w[1] === wantGender) && w[1] !== notGender; });
           return p[Math.floor(Math.random() * p.length)];
         }
         function matching(g) { return cells.filter(function (w) { return w && w[1] === g; }).length; }
-        function ensure(g) {
+        function ensure(g, skip) {                  // quietly turn other words into matching ones when they run low
           while (matching(g) < ArticleHunt.MIN_MATCH) {
-            var idx = []; cells.forEach(function (w, i) { if (w[1] !== g) idx.push(i); });
+            var idx = []; cells.forEach(function (w, i) { if (w[1] !== g && i !== skip) idx.push(i); });
             cells[idx[Math.floor(Math.random() * idx.length)]] = draw(g);
           }
         }
@@ -194,8 +194,9 @@
           try { me.submit({ w: w[0], s: slot }, { quiet: true }); } catch (e) { return; }
           if (w[1] === g) {
             score++;
-            var rest = matching(g) - 1;
-            cells[i] = null; cells[i] = draw(rest < ArticleHunt.MIN_MATCH ? g : null);
+            var old = cells[i][1];
+            cells[i] = null; cells[i] = draw(null, old);       // the new word never has the gender of the one it replaces
+            ensure(g, i);
             render(i);
           } else {
             wrong++; lockUntil = Date.now() + (snap.room.data.pen || ArticleHunt.PENALTY_SECONDS) * 1000;

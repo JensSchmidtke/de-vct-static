@@ -113,8 +113,8 @@
 
         function pool() { return bank.filter(function (w) { return w[2] <= level; }); }
         function onGrid() { var s = {}; cells.forEach(function (w) { if (w) s[w[0]] = true; }); return s; }
-        function draw(wantGender) {                // a noun that is not on the grid yet
-          var on = onGrid(), p = pool().filter(function (w) { return !on[w[0]] && (!wantGender || w[1] === wantGender); });
+        function draw(wantGender, notGender) {      // a noun that is not on the grid yet; notGender: not of the gender just replaced
+          var on = onGrid(), p = pool().filter(function (w) { return !on[w[0]] && (!wantGender || w[1] === wantGender) && w[1] !== notGender; });
           return p[Math.floor(Math.random() * p.length)];
         }
         function matching() { return cells.filter(function (w) { return w && w[1] === gender; }).length; }
@@ -133,11 +133,14 @@
         function setArticle(g) {
           gender = g; articleAt = Date.now();
           var a = $('article'); a.textContent = ART[g]; a.className = 'article ' + g;
-          while (matching() < CFG.MIN_MATCH) {       // make sure there is something to find
-            var idx = []; cells.forEach(function (w, i) { if (w[1] !== gender) idx.push(i); });
+          ensure(null);
+          render();
+        }
+        function ensure(skip) {                      // make sure there is something to find: quietly turn other words into matching ones
+          while (matching() < CFG.MIN_MATCH) {
+            var idx = []; cells.forEach(function (w, i) { if (w[1] !== gender && i !== skip) idx.push(i); });
             cells[idx[Math.floor(Math.random() * idx.length)]] = draw(gender);
           }
-          render();
         }
         function nextArticle() {
           var o = ['m', 'f', 'n'].filter(function (g) { return g !== gender; });
@@ -148,9 +151,10 @@
           if (!running || Date.now() < lockUntil) return;
           if (cells[i][1] === gender) {
             score++; $('score').textContent = score;
-            var rest = matching() - 1;              // matching words that stay on the grid
+            var old = cells[i][1];
             cells[i] = null;
-            cells[i] = draw(rest < CFG.MIN_MATCH ? gender : null);
+            cells[i] = draw(null, old);             // the new word never has the gender of the one it replaces
+            ensure(i);                              // and if matching words are running out, another word changes without anyone noticing
             render(i);
           } else {
             wrong++; lockUntil = Date.now() + CFG.PENALTY * 1000;
