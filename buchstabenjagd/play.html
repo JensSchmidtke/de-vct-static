@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Letter Hunt | Deutsch mit Jens</title>
+    <link rel="stylesheet" href="../room-kit/games.css" />
+    <script src="/stats.js"></script>
+    <style>
+      .lh h1 { font-family: "Fraunces", serif; margin-bottom: 0.5rem; }
+      .lh-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; box-shadow: 0 6px 18px var(--shadow); max-width: 520px; margin: 0 auto; }
+      .lh-card + .lh-card { margin-top: 1rem; }
+      .lh-card h2 { font-family: "Fraunces", serif; font-size: 1.15rem; margin-bottom: 0.6rem; }
+      .join label { display: block; font-size: 0.9rem; font-weight: 500; margin: 0.8rem 0 0.25rem; }
+      .join input { width: 100%; font: inherit; font-size: 1.2rem; padding: 0.55rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; justify-content: center; }
+      .btn-row .button { cursor: pointer; font-family: inherit; }
+      .note { font-size: 0.85rem; color: var(--muted); margin-top: 0.6rem; }
+      .err { color: #b0463c; font-weight: 500; margin-top: 0.6rem; }
+      .bar { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; margin-bottom: 0.5rem; }
+      .bar strong { color: var(--accent-dark); }
+      .timer { font-weight: 700; font-variant-numeric: tabular-nums; padding: 0 0.7rem; border: 3px solid var(--accent-dark); border-radius: 999px; }
+      .timer.low { border-color: #b0463c; color: #b0463c; }
+      svg#board { width: 100%; height: auto; display: block; touch-action: manipulation; user-select: none; max-width: 440px; margin: 0 auto; }
+      .tile { cursor: pointer; }
+      .tile rect { fill: #fffaf3; stroke: #d7c8b8; stroke-width: 3; }
+      .tile.sel rect { fill: #f6dfd0; stroke: #b66a3c; }
+      .tile text { font-family: "Space Grotesk", sans-serif; font-size: 50px; font-weight: 600; fill: #1b1a16; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+      .word { min-height: 2.6rem; font-size: 1.8rem; font-weight: 600; text-align: center; letter-spacing: 0.08em; margin-top: 0.6rem; }
+      .msg { min-height: 1.5rem; text-align: center; font-size: 1rem; }
+      .msg.ok { color: #3f7d3f; font-weight: 600; }
+      .msg.no { color: #b0463c; }
+      .found { display: flex; flex-wrap: wrap; gap: 0.35rem 0.8rem; font-size: 1.05rem; margin-top: 0.4rem; }
+      .found .sent { color: var(--muted); }
+      .found b { color: var(--accent-dark); }
+      .score { font-size: 1.1rem; margin-top: 0.8rem; }
+      .tile[hidden], [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body class="project-page">
+    <header class="site-header">
+      <div class="container">
+        <a href="/">← Deutsch mit Jens</a>
+        <span class="where">Games for the classroom</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="section lh">
+        <div class="container">
+          <h1>Letter Hunt</h1>
+
+          <div class="lh-card join" id="join">
+            <h2>Join the game</h2>
+            <label for="code">Room code</label>
+            <input id="code" type="text" maxlength="5" autocapitalize="characters" autocomplete="off" />
+            <label for="nick">Your nickname</label>
+            <input id="nick" type="text" maxlength="20" autocomplete="off" />
+            <p class="note">Use a nickname, not your real name. It is shown on the teacher’s screen.</p>
+            <p class="err" id="err" hidden></p>
+            <div class="btn-row"><button class="button" id="go" type="button">Join</button></div>
+          </div>
+
+          <div class="lh-card" id="game" hidden>
+            <div class="bar"><span id="who"></span><span class="timer" id="timer" hidden></span></div>
+            <p class="msg" id="wait"></p>
+            <div id="play" hidden>
+              <p class="note" id="hint" style="text-align:center;margin:0 0 0.4rem"></p>
+              <svg id="board" viewBox="0 0 500 500" role="group" aria-label="Letter grid"></svg>
+              <div class="word" id="word" aria-live="polite"></div>
+              <p class="msg" id="msg" aria-live="polite"></p>
+              <div class="btn-row">
+                <button class="button" id="submit" type="button">Send word</button>
+                <button class="button ghost" id="clear" type="button">Clear</button>
+              </div>
+              <p class="note" style="text-align:center">Connect neighbouring letters, diagonals too. Tap the last letter to take it back.</p>
+            </div>
+            <p class="score" id="score"></p>
+            <div class="found" id="found"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>© 2026 <a href="https://jensschmidtke.de">Jens Schmidtke</a></span>
+        <span>Word list: <a href="https://www.wiktionary.org" rel="noopener">Wiktionary</a> (CC BY-SA 4.0) via <a href="https://kaikki.org" rel="noopener">kaikki.org</a>; frequencies: wordfreq</span>
+      </div>
+    </footer>
+
+    <script src="../room-kit/room-kit.js"></script>
+    <script src="../room-kit/room-kit-config.js"></script>
+    <script src="../room-kit/room-kit-supabase.js"></script>
+    <script src="letters.js"></script>
+    <script>
+      (function () {
+        var $ = function (id) { return document.getElementById(id); };
+        var backend = RoomKit.makeBackend(), me = new RoomKit.Player(backend);
+        var pools = {}, snap = null, board = null, shownKey = null, path = [], clock = null, unsub = null, timeUp = false;
+        var ERR = { "room-not-found": "That room does not exist (any more). Check the code.", "nickname-taken": "Someone in the room already uses that nickname. Pick another.", "bad-nickname": "Type a nickname of 1 to 20 characters.", "room-full": "That room is full." };
+
+        var fromUrl = new URLSearchParams(location.search).get("room");
+        if (fromUrl) $("code").value = fromUrl.toUpperCase();
+
+        function showErr(m) { $("err").textContent = m; $("err").hidden = !m; }
+
+        $("go").addEventListener("click", function () {
+          showErr("");
+          $("go").disabled = true;
+          me.join($("code").value, $("nick").value, null).then(enter, function (e) { showErr(ERR[e.message] || "Could not join."); })
+            .then(function () { $("go").disabled = false; });
+        });
+        $("nick").addEventListener("keydown", function (e) { if (e.key === "Enter") $("go").click(); });
+
+        function enter() {
+          $("join").hidden = true; $("game").hidden = false;
+          if (unsub) unsub();
+          unsub = me.subscribe(onSnapshot);
+        }
+        function leave(message) {
+          if (unsub) { unsub(); unsub = null; }
+          if (clock) { clock.stop(); clock = null; }
+          me.forget(); $("game").hidden = true; $("join").hidden = false; showErr(message || "");
+        }
+
+        function gridOf(s) {
+          var d = s.room.data, idx = d.grids && d.grids[s.room.round];
+          var pool = pools[d.level];
+          return pool && idx != null ? pool.grids[idx] : null;
+        }
+
+        function onSnapshot(s) {
+          snap = s;
+          if (!s) { leave("The room was closed."); return; }
+          if (!s.players.some(function (p) { return p.id === me.player.id; })) { leave("The teacher removed you from the room. Pick another nickname to join again."); return; }
+          var d = s.room.data;
+          if (!pools[d.level]) {           // load the grids of the room's level once, then draw
+            pools[d.level] = false;
+            LetterHunt.loadPool(d.level).then(function (p) { pools[d.level] = p; if (snap) onSnapshot(snap); });
+            return;
+          }
+          if (!pools[d.level]) return;
+          draw(s);
+        }
+
+        function mine(s, grid) {            // my accepted words in this round: [{ word, points }] and the sent-but-not-counted ones
+          var rule = LetterHunt.makeRule(grid, s.room.data.minLen, s.decisions, s.room.round, s.room.data.startedAt + s.room.data.duration * 1000);
+          var ok = {}, sent = {}, total = 0;
+          s.submissions.forEach(function (x) {
+            if (x.playerId !== me.player.id || x.round !== s.room.round) return;
+            var w = String(x.payload.word || "").toLowerCase(), r = rule(x);
+            if (r) { if (!ok[w]) { ok[w] = r.points; total += r.points; } } else if (!ok[w]) sent[w] = 1;
+          });
+          Object.keys(ok).forEach(function (w) { delete sent[w]; });
+          return { ok: ok, sent: sent, total: total };
+        }
+
+        function draw(s) {
+          var room = s.room, running = room.status === "running", grid = room.round ? gridOf(s) : null;
+          $("who").innerHTML = "<strong></strong>"; $("who").firstChild.textContent = me.player.nickname;
+          $("play").hidden = !(running && grid && !timeUp);
+          $("wait").textContent = room.status === "lobby" ? "Waiting for the teacher to start the round." : running && timeUp ? "Time is up!" : room.status === "ended" ? "Round " + room.round + " is over. Wait for the next one." : "";
+
+          $("hint").textContent = running && grid ? LetterHunt.hint(grid, room.data.minLen) : "";
+          if (running && grid) {
+            var key = room.round + ":" + grid.l;
+            if (key !== shownKey) { shownKey = key; path = []; timeUp = false; $("word").textContent = ""; $("msg").textContent = ""; board = new LetterHunt.Board($("board"), grid.l, { onTap: tap }); }
+            if (!clock || clock.round !== room.round) {
+              if (clock) clock.stop();
+              clock = new RoomKit.Clock(room.data.startedAt, room.data.duration * 1000, function (left) {
+                var t = $("timer"); t.hidden = false; var sec = Math.ceil(left / 1000); t.textContent = Math.floor(sec / 60) + ":" + ("0" + (sec % 60)).slice(-2); t.classList.toggle("low", left <= 10000);
+              }, function () { timeUp = true; if (snap) draw(snap); });
+              clock.round = room.round;
+            }
+          } else { if (clock) { clock.stop(); clock = null; } $("timer").hidden = true; if (!running) shownKey = null; }
+
+          if (grid && room.round) {
+            var m = mine(s, grid);
+            $("score").innerHTML = "Round " + room.round + ": <strong>" + m.total + "</strong> points";
+            var f = $("found"); f.innerHTML = "";
+            Object.keys(m.ok).forEach(function (w) { var b = document.createElement("b"); b.textContent = w + " +" + m.ok[w]; f.appendChild(b); });
+            Object.keys(m.sent).forEach(function (w) { var sp = document.createElement("span"); sp.className = "sent"; sp.textContent = w + " (sent to the teacher)"; f.appendChild(sp); });
+          } else { $("score").textContent = ""; $("found").innerHTML = ""; }
+        }
+
+        /* ---------- building a word ---------- */
+
+        function setPath(p) { path = p; if (board) board.setPath(p); showWord(); }
+        function wordOf(p) { return p.map(function (i) { return board.letters.charAt(i); }).join(""); }
+        function showWord() { $("word").textContent = board ? wordOf(path) : ""; }
+
+        function tap(i) {
+          if (timeUp) return;
+          var last = path[path.length - 1], at = path.indexOf(i);
+          $("msg").textContent = ""; $("msg").className = "msg";
+          if (i === last) setPath(path.slice(0, -1));
+          else if (at >= 0) setPath(path.slice(0, at + 1));
+          else if (path.length && LetterHunt.adjacent(last, i, board.size)) setPath(path.concat(i));
+          else setPath([i]);
+        }
+
+        $("clear").addEventListener("click", function () { setPath([]); $("msg").textContent = ""; });
+
+        $("submit").addEventListener("click", function () {
+          if (!snap || timeUp || !path.length) return;
+          var d = snap.room.data, word = wordOf(path).toLowerCase(), msg = $("msg"), grid = gridOf(snap);
+          msg.className = "msg";
+          if (word.length < d.minLen) { msg.textContent = "Words need at least " + d.minLen + " letters."; msg.classList.add("no"); return; }
+          if (mine(snap, grid).ok[word]) { msg.textContent = "You already found “" + word + "”."; return; }
+          try { me.submit({ word: word, path: path.slice() }); }
+          catch (e) { msg.textContent = "The round is not running."; msg.classList.add("no"); return; }
+          var pts = LetterHunt.wordMap(grid, d.minLen)[word];
+          if (pts != null) { msg.textContent = "“" + word + "”  +" + pts; msg.classList.add("ok"); }
+          else { msg.textContent = "“" + word + "” is not on the list; it was sent to the teacher."; }
+          setPath([]);
+        });
+
+        // coming back to the page (reload) re-joins as the same player
+        if (fromUrl) me.resume(fromUrl).then(function (ok) { if (ok) enter(); });
+      })();
+    </script>
+  </body>
+</html>

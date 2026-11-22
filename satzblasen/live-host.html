@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sentence Bubbles Live Host | Deutsch mit Jens</title>
+    <link rel="stylesheet" href="../room-kit/games.css" />
+    <script src="/stats.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+      .lh h1 { font-family: "Fraunces", serif; margin-bottom: 0.5rem; }
+      .lh-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; box-shadow: 0 6px 18px var(--shadow); }
+      .lh-card + .lh-card { margin-top: 1rem; }
+      .lh-card h2 { font-family: "Fraunces", serif; font-size: 1.1rem; margin-bottom: 0.6rem; }
+      .setup { max-width: 460px; }
+      .setup label { display: block; font-size: 0.9rem; font-weight: 500; margin: 0.8rem 0 0.25rem; }
+      .setup input, .setup select { width: 100%; font: inherit; font-size: 1.1rem; padding: 0.5rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+      .btn-row .button { cursor: pointer; font-family: inherit; }
+      .note { font-size: 0.82rem; color: var(--muted); margin-top: 0.6rem; }
+      .stepper { display: flex; align-items: center; gap: 0.6rem; }
+      .stepper output { min-width: 4rem; text-align: center; font-size: 1.2rem; font-weight: 600; }
+      .stepper .button { cursor: pointer; font-family: inherit; min-width: 2.4rem; }
+
+      body.playing .lh h1, body.playing .site-footer { display: none; }
+      body.playing .lh .container { width: min(1750px, 97vw); }
+      body.playing .section.lh { padding-top: 0.8rem; padding-bottom: 0.8rem; }
+      .room { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(0, 3.2fr) minmax(240px, 1.2fr); gap: 1rem; height: calc(100vh - var(--top, 130px) - 0.8rem); min-height: 520px; }
+      .col { min-width: 0; min-height: 0; overflow: auto; }
+      .qr { width: min(100%, 200px); margin: 0 auto; }
+      .code { font-family: "Fraunces", serif; font-size: 2.2rem; font-weight: 700; letter-spacing: 0.15em; text-align: center; color: var(--accent-dark); }
+      .link { font-size: 0.78rem; text-align: center; overflow-wrap: anywhere; color: var(--muted); }
+      .players { list-style: none; margin-top: 0.4rem; }
+      .players li { display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0; border-top: 1px solid var(--line); font-size: 1.05rem; }
+      .players button { border: 0; background: none; color: #b0463c; cursor: pointer; font-size: 1.1rem; }
+      .center { display: flex; flex-direction: column; min-height: 0; }
+      .status { text-align: center; font-size: clamp(1.1rem, 2.6vh, 1.5rem); min-height: 1.8rem; }
+      .status strong { color: var(--accent-dark); }
+      .timer { display: inline-block; margin-left: 0.7rem; padding: 0 0.8rem; border: 3px solid var(--accent-dark); border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums; }
+      .timer.low { border-color: #b0463c; color: #b0463c; }
+      .boardwrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+      svg#board { width: 100%; height: 100%; display: block; }
+      #board .bubble rect { fill: #fffaf3; stroke: #d7c8b8; stroke-width: 3; }
+      #board text { font-family: "Space Grotesk", sans-serif; font-size: 19px; font-weight: 500; fill: #1b1a16; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+      #board .fo { width: 100%; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 8px;
+                   font-family: "Space Grotesk", sans-serif; font-weight: 500; line-height: 1.05; color: #1b1a16; hyphens: auto; -webkit-hyphens: auto; overflow-wrap: break-word; pointer-events: none; }
+      .board-actions { display: flex; justify-content: center; gap: 0.6rem; padding-top: 0.4rem; }
+      .board-actions .button { cursor: pointer; font-family: inherit; }
+      .board-actions .button[hidden], .btn-row[hidden] { display: none; }
+      .rank { list-style: none; }
+      .rank li { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0; border-top: 1px solid var(--line); font-size: 1.1rem; }
+      .rank li:first-child { border-top: 0; }
+      .rank .pts { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .rank small { color: var(--muted); }
+      .modal { position: fixed; inset: 0; background: rgba(27, 26, 22, 0.5); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 20; }
+      .modal[hidden] { display: none; }
+      .modal .lh-card { max-width: 680px; width: 100%; max-height: 92vh; overflow: auto; }
+      .modal h2 { font-size: 1.5rem; }
+      .modal h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
+      .sols { list-style: none; font-size: 1.05rem; }
+      .sols li { padding: 0.15rem 0; }
+      .rej { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0; border-top: 1px solid var(--line); }
+      .rej span { flex: 1; }
+      .rej .button { cursor: pointer; font-family: inherit; }
+      @media (max-width: 900px) { .room { grid-template-columns: 1fr; height: auto; } .boardwrap { flex: none; } svg#board { height: auto; max-width: 480px; margin: 0 auto; } }
+    </style>
+  </head>
+  <body class="project-page">
+    <header class="site-header">
+      <div class="container">
+        <a href="/">← Deutsch mit Jens</a>
+        <span class="where">Games for the classroom</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="section lh">
+        <div class="container">
+          <h1>Sentence Bubbles live: teacher</h1>
+
+          <div id="setup" class="lh-card setup">
+            <h2>New room</h2>
+            <label for="rname">Name of the room</label>
+            <input id="rname" type="text" value="My class" maxlength="30" />
+            <label for="level">Words and grammar</label>
+            <select id="level">
+              <option value="nw_ch1_pool.json">Netzwerk A1, chapter 1</option>
+              <option value="nw_ch2_pool.json">Netzwerk A1, up to chapter 2</option>
+              <option value="nw_ch3_pool.json">Netzwerk A1, up to chapter 3</option>
+              <option value="nw_ch4_pool.json">Netzwerk A1, up to chapter 4</option>
+              <option value="nw_ch5_pool.json">Netzwerk A1, up to chapter 5</option>
+              <option value="nw_ch6_pool.json" selected>Netzwerk A1, up to chapter 6</option>
+              <option value="grid_a2_6x6_pool.json">A2 (Goethe word list, with Perfekt)</option>
+            </select>
+            <label>Time for each round</label>
+            <div class="stepper">
+              <button class="button small ghost" id="t-minus" type="button" aria-label="10 seconds less">−</button>
+              <output id="t-val">3:00</output>
+              <button class="button small ghost" id="t-plus" type="button" aria-label="10 seconds more">+</button>
+            </div>
+            <div class="btn-row"><button class="button" id="create" type="button">Open the room</button></div>
+            <p class="note">Everyone plays on their own phone, on the same grid at the same time, and connects neighbouring bubbles into sentences. The player with the most words connected wins the round; ties go to fewer wrong attempts, then to the earlier finish. Students join with a nickname, not their real name. When you end the game, the room and everything in it is deleted.</p>
+          </div>
+
+          <div id="room" class="room" hidden>
+            <div class="col">
+              <div class="lh-card">
+                <h2>Join</h2>
+                <div class="qr" id="qr"></div>
+                <div class="code" id="code"></div>
+                <p class="link" id="link"></p>
+              </div>
+              <div class="lh-card">
+                <h2>Players (<span id="pcount">0</span>)</h2>
+                <ul class="players" id="players"></ul>
+              </div>
+            </div>
+            <div class="center">
+              <p class="status"><span id="status"></span><span class="timer" id="timer" hidden></span></p>
+              <div class="boardwrap"><svg id="board" viewBox="0 0 600 600" role="img" aria-label="The grid"></svg></div>
+              <div class="board-actions">
+                <button class="button" id="start" type="button">Start round</button>
+                <button class="button ghost" id="stop" type="button" hidden>End round</button>
+                <button class="button ghost" id="results" type="button" hidden>Show results</button>
+                <button class="button ghost" id="endgame" type="button">End game</button>
+              </div>
+            </div>
+            <div class="col">
+              <div class="lh-card">
+                <h2 id="rank-title">Leaderboard</h2>
+                <ol class="rank" id="rank"></ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal" id="modal" hidden><div class="lh-card" id="modal-card"></div></div>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>© 2026 <a href="https://jensschmidtke.de">Jens Schmidtke</a></span>
+      </div>
+    </footer>
+
+    <script src="../room-kit/room-kit.js"></script>
+    <script src="../room-kit/room-kit-config.js"></script>
+    <script src="../room-kit/room-kit-supabase.js"></script>
+    <script src="live.js"></script>
+    <script>
+      (function () {
+        var $ = function (id) { return document.getElementById(id); };
+        var GAME = "sentence-live";
+        var backend = RoomKit.makeBackend(), host = new RoomKit.Host(backend);
+        var cfg = { duration: 180 };
+        var pool = null, snap = null, clock = null, board = null, shownKey = null, modalOpen = false, unsub = null;
+
+        function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+        function mmss(ms) { var s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+        function fitTop() { document.documentElement.style.setProperty("--top", ($("room").getBoundingClientRect().top + window.scrollY) + "px"); }
+
+        /* ---------- setup ---------- */
+
+        function showTime() { $("t-val").textContent = mmss(cfg.duration * 1000); }
+        $("t-minus").addEventListener("click", function () { cfg.duration = Math.max(30, cfg.duration - 10); showTime(); });
+        $("t-plus").addEventListener("click", function () { cfg.duration = Math.min(600, cfg.duration + 10); showTime(); });
+
+        $("create").addEventListener("click", function () {
+          var file = $("level").value;
+          $("create").disabled = true;
+          SentenceLive.loadPool(file).then(function (p) {
+            pool = p;
+            return host.create($("rname").value.trim() || "Room", GAME, { file: file, duration: cfg.duration, grids: {} }).then(open);
+          }).catch(function () { alert("Could not create the room. Check the connection."); }).then(function () { $("create").disabled = false; });
+        });
+
+        function open() {
+          $("setup").hidden = true; $("room").hidden = false; document.body.classList.add("playing");
+          fitTop(); window.scrollTo(0, 0);
+          var url = new URL("live-play.html?room=" + host.code, location.href).href;
+          RoomKit.qr($("qr"), url); $("code").textContent = host.code; $("link").textContent = url;
+          if (unsub) unsub();
+          unsub = host.subscribe(onSnapshot);
+        }
+
+        /* ---------- the room ---------- */
+
+        function layoutFor(round) {
+          var idx = snap && snap.room.data.grids && snap.room.data.grids[round];
+          return idx == null ? null : pool.layouts[idx];
+        }
+        function evalRound(round, current) {
+          var d = snap.room.data;
+          return SentenceLive.evaluate(snap, round, layoutFor(round), pool.cols, current && d.startedAt ? d.startedAt + d.duration * 1000 : 0);
+        }
+        function winnerText(rows) {
+          if (!rows.length || !rows[0].points) return "Nobody has connected a sentence.";
+          var a = rows[0], b = rows[1];
+          if (b && b.points === a.points && b.wrong === a.wrong && b.last === a.last) return "A tie at the top.";
+          return "<strong>" + esc(a.player.nickname) + "</strong> wins the round.";
+        }
+
+        function onSnapshot(s) {
+          snap = s;
+          if (!s) { stopClock(); closeModal(); $("room").hidden = true; $("setup").hidden = false; document.body.classList.remove("playing"); return; }
+          var room = s.room, d = room.data, layout = room.round ? layoutFor(room.round) : null;
+
+          $("pcount").textContent = s.players.length;
+          $("players").innerHTML = "";
+          s.players.forEach(function (p) {
+            var li = document.createElement("li"), name = document.createElement("span"), b = document.createElement("button");
+            name.textContent = p.nickname; b.textContent = "×"; b.title = "Remove " + p.nickname;
+            b.addEventListener("click", function () { host.removePlayer(p.id); });
+            li.appendChild(name); li.appendChild(b); $("players").appendChild(li);
+          });
+
+          // the grid, while a round runs or after it; before the first round a blank board
+          var key = layout ? room.round + ":" + layout.cells.join("|") : "";
+          if (key !== shownKey || !board) {
+            shownKey = key;
+            var shown = layout || { cells: new Array(pool.cols * pool.rows).fill("") };
+            board = new SentenceLive.Board($("board"), shown, pool.cols, { wide: true });
+            board.render({}, [], []);
+          }
+
+          var running = room.status === "running";
+          $("start").hidden = running; $("stop").hidden = !running; $("results").hidden = room.status !== "ended";
+          $("start").textContent = room.round ? "Next round" : "Start round";
+          $("start").disabled = !s.players.length;
+          $("status").innerHTML = running ? "Round <strong>" + room.round + "</strong>" : room.status === "ended" ? "Round <strong>" + room.round + "</strong> is over"
+            : s.players.length ? "Everyone in? Start the round." : "Waiting for players to join";
+          if (running) startClock(room, d); else stopClock();
+
+          var rows = [];
+          if (room.round && layout) rows = evalRound(room.round, true).rows;
+          $("rank-title").textContent = room.round ? "Round " + room.round : "Leaderboard";
+          var total = pool.cols * pool.rows;
+          $("rank").innerHTML = rows.length ? rows.map(function (r) {
+            return "<li><span>" + esc(r.player.nickname) + " <small>" + r.sentences + " sentences</small></span><span class=\"pts\">" + r.points + " / " + total + "</span></li>";
+          }).join("") : "<li><span class=\"note\">" + (s.players.length ? "No answers yet." : "") + "</span></li>";
+
+          // everyone has used every word: no need to wait for the clock
+          if (running && rows.length && rows.every(function (r) { return r.solved; })) { host.endRound(); openResults(); return; }
+          if (modalOpen) renderResults();
+        }
+
+        function startClock(room, d) {
+          if (clock && clock.round === room.round) return;
+          stopClock();
+          clock = new RoomKit.Clock(d.startedAt, d.duration * 1000, function (left) {
+            var t = $("timer"); t.hidden = false; t.textContent = mmss(left); t.classList.toggle("low", left <= 10000);
+          }, function () { if (snap && snap.room.status === "running") { host.endRound(); openResults(); } });
+          clock.round = room.round;
+        }
+        function stopClock() { if (clock) { clock.stop(); clock = null; } $("timer").hidden = true; }
+
+        $("start").addEventListener("click", function () {
+          var s = host.state(), used = Object.keys(s.room.data.grids).map(function (k) { return s.room.data.grids[k]; }), idx;
+          do { idx = Math.floor(Math.random() * pool.layouts.length); } while (used.indexOf(idx) >= 0 && used.length < pool.layouts.length);
+          var grids = Object.assign({}, s.room.data.grids); grids[s.room.round + 1] = idx;
+          closeModal();
+          host.startRound({ grids: grids });
+        });
+        $("stop").addEventListener("click", function () { host.endRound(); openResults(); });
+        $("results").addEventListener("click", openResults);
+        $("endgame").addEventListener("click", function () {
+          if (confirm("Delete the room and everything in it?")) { stopClock(); closeModal(); host.deleteRoom(GAME); }
+        });
+
+        /* ---------- results ---------- */
+
+        function openResults() { modalOpen = true; $("modal").hidden = false; renderResults(); }
+        function closeModal() { modalOpen = false; $("modal").hidden = true; }
+
+        function renderResults() {
+          if (!snap || !snap.room.round) return;
+          var room = snap.room, round = room.round, layout = layoutFor(round), total = pool.cols * pool.rows;
+          var ev = evalRound(round, false), rows = ev.rows;
+          var totals = {};
+          for (var r = 1; r <= round; r++) {
+            if (!layoutFor(r)) continue;
+            evalRound(r, false).rows.forEach(function (x) { totals[x.player.id] = (totals[x.player.id] || 0) + x.points; });
+          }
+          var h = "<h2>Round " + round + (room.status === "running" ? "" : " is over") + "</h2><p>" + winnerText(rows) + "</p>";
+          h += "<ol class=\"rank\">" + rows.map(function (x) {
+            var t = x.last == null ? "" : " · done at " + mmss(x.last);
+            return "<li><span>" + esc(x.player.nickname) + " <small>" + x.sentences + " sentences · " + x.wrong + " wrong" + t + " · " + (totals[x.player.id] || 0) + " in total</small></span>" +
+              "<span class=\"pts\">" + x.points + " / " + total + "</span></li>";
+          }).join("") + "</ol>";
+
+          if (ev.rejected.length) {
+            h += "<h3>Sentences that were not on the list</h3>";
+            ev.rejected.forEach(function (e) {
+              h += "<div class=\"rej\"><span><strong>" + esc(e.text) + "</strong> <small>" + esc(e.players.join(", ")) + "</small></span>" +
+                (e.decision === true ? "<em>accepted</em>" : "<button class=\"button small\" data-t=\"" + esc(e.text) + "\">Accept</button>") + "</div>";
+            });
+          }
+          h += "<h3>The solution</h3><ul class=\"sols\">" + layout.solution.map(function (p) { return "<li>" + esc(SentenceLive.cap(SentenceLive.textOf(layout, p))) + "</li>"; }).join("") + "</ul>";
+          h += "<div class=\"btn-row\">" + (room.status === "running" ? "<button class=\"button ghost\" id=\"m-close\" type=\"button\">Back</button>" :
+            "<button class=\"button\" id=\"m-next\" type=\"button\">Next round</button><button class=\"button ghost\" id=\"m-close\" type=\"button\">Close</button>") +
+            "<button class=\"button ghost\" id=\"m-end\" type=\"button\">End game and delete the room</button></div>";
+          $("modal-card").innerHTML = h;
+
+          $("modal-card").querySelectorAll("[data-t]").forEach(function (b) {
+            b.addEventListener("click", function () { host.decide(round, b.getAttribute("data-t"), true); });
+          });
+          var next = $("m-next"); if (next) next.addEventListener("click", function () { $("start").click(); });
+          $("m-close").addEventListener("click", closeModal);
+          $("m-end").addEventListener("click", function () { $("endgame").click(); });
+        }
+
+        window.addEventListener("resize", function () { if (!$("room").hidden) { fitTop(); if (board) board.render({}, [], []); } });
+        showTime();
+
+        // a reload of this page picks the room up again
+        host.resume(GAME).then(function (ok) {
+          if (ok) SentenceLive.loadPool(host.state().room.data.file).then(function (p) { pool = p; open(); });
+        });
+      })();
+    </script>
+  </body>
+</html>
