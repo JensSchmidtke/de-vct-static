@@ -31,6 +31,9 @@
  *   deleteRoom(code, token)
  * RoomKit.now() is the time of the server (set by a server backend, since phones' clocks differ); use it for round starts and clocks.
  * Host and Player show their own actions at once (optimistic) and settle with the server's snapshot.
+ * Options for busy games: new Player(backend, { light: true }) gets the room and the players but not everybody's submissions;
+ * new Host(backend, { pollMs: 1500 }) fetches the room that often; player.submit(payload, { quiet: true }) does not announce
+ * the submission to the room (the host's polling picks it up). Both keep a server backend within its message limits.
  */
 (function (global) {
   'use strict';
@@ -173,12 +176,12 @@
   var clockOffset = 0;                                       // server time minus this device's time, set by a server backend
   function now() { return Date.now() + clockOffset; }
 
-  function Session(backend) { this.backend = backend; this.code = null; this.snap = null; this.listeners = []; this.pending = []; this.unsub = null; }
+  function Session(backend, opts) { this.backend = backend; this.opts = opts || {}; this.code = null; this.snap = null; this.listeners = []; this.pending = []; this.unsub = null; }
   Session.prototype._attach = function (code, snap) {
     var self = this;
     this.code = code; this.snap = snap || null;
     if (this.unsub) this.unsub();
-    this.unsub = this.backend.subscribe(code, function (s) { self._receive(s); });
+    this.unsub = this.backend.subscribe(code, function (s) { self._receive(s); }, this.opts);
   };
   Session.prototype._receive = function (s) {
     s = clone(s);
@@ -192,7 +195,7 @@
     if (this.snap) { this.snap = clone(this.snap); apply(this.snap); this.pending.push(p); this.listeners.slice().forEach(function (cb) { cb(self.snap); }); }
     return Promise.resolve().then(call).then(function (r) { p.done = true; return r; }, function (e) {
       p.done = true;
-      Promise.resolve(self.backend.getState(self.code)).then(function (s) { self._receive(s); });     // undo the guess
+      Promise.resolve(self.backend.getState(self.code, self.opts)).then(function (s) { self._receive(s); });     // undo the guess
       throw e;
     });
   };
@@ -205,21 +208,21 @@
   };
   Session.prototype._close = function () { if (this.unsub) this.unsub(); this.unsub = null; this.listeners = []; this.pending = []; };
 
-  function Host(backend) { Session.call(this, backend); this.token = null; }
+  function Host(backend, opts) { Session.call(this, backend, opts); this.token = null; }
   Host.prototype = Object.create(Session.prototype);
   Host.prototype.create = function (name, game, data) {
     var self = this;
     return Promise.resolve().then(function () { return self.backend.createRoom({ name: name, game: game, data: data }); }).then(function (r) {
       self.token = r.token;
       ssSet('roomkit:host:' + game, JSON.stringify(r));
-      return Promise.resolve(self.backend.getState(r.code)).then(function (s) { self._attach(r.code, s); return r; });
+      return Promise.resolve(self.backend.getState(r.code, self.opts)).then(function (s) { self._attach(r.code, s); return r; });
     });
   };
   Host.prototype.resume = function (game) {       // after a reload of the host page: Promise of true, or false if the room is gone
     var self = this, raw = ssGet('roomkit:host:' + game);
     if (!raw) return Promise.resolve(false);
     var r = JSON.parse(raw);
-    return Promise.resolve().then(function () { return self.backend.getState(r.code); }).then(function (s) {
+    return Promise.resolve().then(function () { return self.backend.getState(r.code, self.opts); }).then(function (s) {
       if (!s) { ssDel('roomkit:host:' + game); return false; }
       self.token = r.token; self._attach(r.code, s);
       return true;
@@ -258,7 +261,7 @@
     return Promise.resolve().then(function () { return b.deleteRoom(code, token); });
   };
 
-  function Player(backend) { Session.call(this, backend); this.player = null; }
+  function Player(backend, opts) { Session.call(this, backend, opts); this.player = null; }
   Player.prototype = Object.create(Session.prototype);
   Player.prototype.join = function (code, nickname, team) {
     var self = this;
@@ -266,7 +269,7 @@
     return Promise.resolve().then(function () { return self.backend.join(code, nickname, team); }).then(function (p) {
       self.player = p;
       ssSet('roomkit:player:' + code, JSON.stringify(p));
-      return Promise.resolve(self.backend.getState(code)).then(function (s) { self._attach(code, s); return p; });
+      return Promise.resolve(self.backend.getState(code, self.opts)).then(function (s) { self._attach(code, s); return p; });
     });
   };
   Player.prototype.resume = function (code) {     // Promise of true, or false if not (or no longer) joined
@@ -274,19 +277,19 @@
     code = String(code || '').toUpperCase();
     var raw = ssGet('roomkit:player:' + code);
     if (!raw) return Promise.resolve(false);
-    return Promise.resolve().then(function () { return self.backend.getState(code); }).then(function (snap) {
+    return Promise.resolve().then(function () { return self.backend.getState(code, self.opts); }).then(function (snap) {
       var p = JSON.parse(raw);
       if (!snap || !snap.players.some(function (x) { return x.id === p.id; })) { ssDel('roomkit:player:' + code); return false; }
       self.player = p; self._attach(code, snap);
       return true;
     }, function () { return false; });
   };
-  Player.prototype.submit = function (payload) {         // throws 'not-running' at once if the round is over
+  Player.prototype.submit = function (payload, o) {      // throws 'not-running' at once if the round is over; o.quiet: do not announce it to the room
     var self = this, me = this.player;
     if (!this.snap || this.snap.room.status !== 'running') throw new Error('not-running');
     var sub = { id: me.id + ':' + uid(), playerId: me.id, round: this.snap.room.round, payload: clone(payload), at: now() };
     return this._act(function (s) { if (!s.submissions.some(function (x) { return x.id === sub.id; })) s.submissions.push(clone(sub)); },
-                     function () { return self.backend.submit(self.code, me, payload, sub.id, sub.round); });
+                     function () { return self.backend.submit(self.code, me, payload, sub.id, sub.round, o); });
   };
   Player.prototype.forget = function () { ssDel('roomkit:player:' + this.code); this._close(); this.player = null; this.snap = null; };
 

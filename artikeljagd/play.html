@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Article Hunt | Deutsch mit Jens</title>
+    <link rel="stylesheet" href="../room-kit/games.css" />
+    <script src="/stats.js"></script>
+    <style>
+      .ah h1 { font-family: "Fraunces", serif; margin-bottom: 0.5rem; }
+      .ah-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; box-shadow: 0 6px 18px var(--shadow); max-width: 640px; margin: 0 auto; }
+      .ah-card h2 { font-family: "Fraunces", serif; font-size: 1.15rem; margin-bottom: 0.6rem; }
+      .join label { display: block; font-size: 0.9rem; font-weight: 500; margin: 0.8rem 0 0.25rem; }
+      .join input { width: 100%; font: inherit; font-size: 1.2rem; padding: 0.55rem 0.7rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+      .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; justify-content: center; }
+      .btn-row .button { cursor: pointer; font-family: inherit; }
+      .note { font-size: 0.85rem; color: var(--muted); margin-top: 0.6rem; }
+      .err { color: #b0463c; font-weight: 500; margin-top: 0.6rem; }
+      [hidden] { display: none !important; }
+      .bar { display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem; margin-bottom: 0.4rem; }
+      .bar strong { color: var(--accent-dark); }
+      .timer { font-weight: 700; font-variant-numeric: tabular-nums; padding: 0 0.7rem; border: 3px solid var(--accent-dark); border-radius: 999px; }
+      .timer.low { border-color: #b0463c; color: #b0463c; }
+      .msg { min-height: 1.4rem; text-align: center; }
+      .article { font-family: "Fraunces", serif; font-weight: 700; font-size: 3.4rem; line-height: 1; padding: 0.05em 0.5em 0.15em; border-radius: 18px; color: #fff; text-align: center; margin: 0 auto; width: max-content; min-width: 3.2em; }
+      .article.m { background: #3d7a99; } .article.f { background: #c0506a; } .article.n { background: #5a8f5a; }
+      .meter { height: 8px; background: var(--line); border-radius: 4px; margin: 0.6rem 0; overflow: hidden; }
+      .meter span { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+      .grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+      @media (min-width: 600px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+      .cell { font: inherit; font-weight: 500; font-size: 0.95rem; color: var(--ink); background: #fffaf3; border: 3px solid var(--line); border-radius: 999px; cursor: pointer; padding: 0 0.2rem; min-height: 3.1rem; overflow-wrap: anywhere; hyphens: auto; line-height: 1.05; touch-action: manipulation; }
+      .cell.pop { animation: pop 0.25s ease; }
+      @keyframes pop { from { transform: scale(0.7); opacity: 0.3; } to { transform: scale(1); opacity: 1; } }
+      .grid.locked .cell { opacity: 0.35; }
+      .lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #b0463c; color: #fff; font-size: 1.3rem; font-weight: 700; padding: 0.4em 1em; border-radius: 14px; pointer-events: none; white-space: nowrap; }
+      .score { font-size: 1.1rem; margin-top: 0.8rem; text-align: center; }
+    </style>
+  </head>
+  <body class="project-page">
+    <header class="site-header">
+      <div class="container">
+        <a href="/">← Deutsch mit Jens</a>
+        <span class="where">Games for the classroom</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="section ah">
+        <div class="container">
+          <h1>Article Hunt</h1>
+
+          <div class="ah-card join" id="join">
+            <h2>Join the game</h2>
+            <label for="code">Room code</label>
+            <input id="code" type="text" maxlength="5" autocapitalize="characters" autocomplete="off" />
+            <label for="nick">Your nickname</label>
+            <input id="nick" type="text" maxlength="20" autocomplete="off" />
+            <p class="note">Use a nickname, not your real name. It is shown on the teacher’s screen.</p>
+            <p class="err" id="err" hidden></p>
+            <div class="btn-row"><button class="button" id="go" type="button">Join</button></div>
+          </div>
+
+          <div class="ah-card" id="game" hidden>
+            <div class="bar"><span id="who"></span><span class="timer" id="timer" hidden></span></div>
+            <p class="msg" id="wait"></p>
+            <div id="play" hidden>
+              <div class="article m" id="article">der</div>
+              <div class="meter"><span id="meter"></span></div>
+              <div class="grid" id="grid"></div>
+            </div>
+            <p class="score" id="score"></p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <span>© 2026 <a href="https://jensschmidtke.de">Jens Schmidtke</a></span>
+        <span>Words: Netzwerk neu, chapters 1–6</span>
+      </div>
+    </footer>
+
+    <script src="../room-kit/room-kit.js"></script>
+    <script src="../room-kit/room-kit-config.js"></script>
+    <script src="../room-kit/room-kit-supabase.js"></script>
+    <script src="articles.js"></script>
+    <script>
+      (function () {
+        var $ = function (id) { return document.getElementById(id); };
+        var backend = RoomKit.makeBackend(), me = new RoomKit.Player(backend, { light: true });
+        var bank = [], gmap = {}, snap = null, unsub = null, ticker = null;
+        var cells = [], round = 0, score = 0, wrong = 0, lockUntil = 0, slot = -1, over = false, level = 0;
+        var ERR = { "room-not-found": "That room does not exist (any more). Check the code.", "nickname-taken": "Someone in the room already uses that nickname. Pick another.", "bad-nickname": "Type a nickname of 1 to 20 characters.", "room-full": "That room is full." };
+
+        var fromUrl = new URLSearchParams(location.search).get("room");
+        if (fromUrl) $("code").value = fromUrl.toUpperCase();
+        function showErr(m) { $("err").textContent = m; $("err").hidden = !m; }
+
+        var ready = ArticleHunt.loadBank().then(function (b) { bank = b; gmap = ArticleHunt.genderMap(b); });
+
+        $("go").addEventListener("click", function () {
+          showErr(""); $("go").disabled = true;
+          ready.then(function () { return me.join($("code").value, $("nick").value, null); })
+            .then(enter, function (e) { showErr(ERR[e.message] || "Could not join."); })
+            .then(function () { $("go").disabled = false; });
+        });
+        $("nick").addEventListener("keydown", function (e) { if (e.key === "Enter") $("go").click(); });
+
+        function enter() {
+          $("join").hidden = true; $("game").hidden = false;
+          if (unsub) unsub();
+          unsub = me.subscribe(onSnapshot);
+          if (!ticker) ticker = setInterval(tick, 100);
+        }
+        function leave(message) {
+          if (unsub) { unsub(); unsub = null; }
+          if (ticker) { clearInterval(ticker); ticker = null; }
+          me.forget(); $("game").hidden = true; $("join").hidden = false; showErr(message || "");
+        }
+
+        /* ---------- my grid ---------- */
+
+        function pool() { return bank.filter(function (w) { return w[2] <= level; }); }
+        function draw(wantGender) {
+          var on = {}; cells.forEach(function (w) { if (w) on[w[0]] = true; });
+          var p = pool().filter(function (w) { return !on[w[0]] && (!wantGender || w[1] === wantGender); });
+          return p[Math.floor(Math.random() * p.length)];
+        }
+        function matching(g) { return cells.filter(function (w) { return w && w[1] === g; }).length; }
+        function ensure(g) {
+          while (matching(g) < ArticleHunt.MIN_MATCH) {
+            var idx = []; cells.forEach(function (w, i) { if (w[1] !== g) idx.push(i); });
+            cells[idx[Math.floor(Math.random() * idx.length)]] = draw(g);
+          }
+        }
+        function render(popIndex) {
+          var g = $("grid"); g.innerHTML = "";
+          cells.forEach(function (w, i) {
+            var b = document.createElement("button"); b.type = "button"; b.className = "cell" + (i === popIndex ? " pop" : "");
+            b.lang = "de"; b.textContent = w[0]; b.addEventListener("click", function () { tap(i); });
+            g.appendChild(b);
+          });
+          var l = document.createElement("div"); l.className = "lock"; l.id = "lock"; l.hidden = true; g.appendChild(l);
+        }
+
+        function newRound(s) {
+          round = s.room.round; level = s.room.data.level; score = 0; wrong = 0; lockUntil = 0; slot = -1; over = false;
+          cells = []; for (var i = 0; i < ArticleHunt.GRID; i++) cells.push(draw());
+          $("score").textContent = "";
+        }
+
+        function currentGender() {
+          var d = snap.room.data, seq = d.seqs[round] || [];
+          return seq[Math.min(slot, seq.length - 1)];
+        }
+
+        function onSnapshot(s) {
+          snap = s;
+          if (!s) { leave("The room was closed."); return; }
+          if (!s.players.some(function (p) { return p.id === me.player.id; })) { leave("The teacher removed you from the room. Pick another nickname to join again."); return; }
+          $("who").innerHTML = "<strong></strong>"; $("who").firstChild.textContent = me.player.nickname;
+          var room = s.room;
+          if (room.status === "running" && room.round !== round && bank.length) newRound(s);
+          tick();
+        }
+
+        function tick() {
+          if (!snap) return;
+          var room = snap.room, d = room.data, running = room.status === "running" && room.round === round && bank.length;
+          if (running) {
+            var left = d.duration * 1000 - (RoomKit.now() - d.startedAt);
+            if (left <= 0) over = true;
+            var sec = Math.max(0, Math.ceil(left / 1000)), t = $("timer");
+            t.hidden = false; t.textContent = Math.floor(sec / 60) + ":" + ("0" + (sec % 60)).slice(-2); t.classList.toggle("low", sec <= 10);
+            if (!over) {
+              var sl = ArticleHunt.slotAt(d.startedAt, d.art, RoomKit.now());
+              if (sl !== slot) { slot = sl; var g = currentGender(); if (g) { ensure(g); $("article").textContent = ArticleHunt.ART[g]; $("article").className = "article " + g; render(); } }
+              var el = RoomKit.now() - d.startedAt;
+              $("meter").style.transform = "scaleX(" + Math.max(0, Math.min(1, 1 - (el - slot * d.art * 1000) / (d.art * 1000))) + ")";
+              var gr = $("grid"), lk = $("lock");
+              if (Date.now() < lockUntil) { gr.classList.add("locked"); if (lk) { lk.hidden = false; lk.textContent = "Wrong. Wait " + Math.ceil((lockUntil - Date.now()) / 1000) + " s"; } }
+              else if (gr.classList.contains("locked")) { gr.classList.remove("locked"); if (lk) lk.hidden = true; }
+            }
+          } else $("timer").hidden = true;
+          $("play").hidden = !(running && !over);
+          $("wait").textContent = room.status === "lobby" ? "Waiting for the teacher to start the round." : running && over ? "Time is up!" : room.status === "ended" ? "Round " + room.round + " is over. Wait for the next one." : "";
+          if (room.round && room.round === round) $("score").innerHTML = "Round " + round + ": <strong>" + score + "</strong> points, " + wrong + " wrong";
+        }
+
+        function tap(i) {
+          if (over || !snap || snap.room.status !== "running" || Date.now() < lockUntil) return;
+          var g = currentGender(), w = cells[i];
+          try { me.submit({ w: w[0], s: slot }, { quiet: true }); } catch (e) { return; }
+          if (w[1] === g) {
+            score++;
+            var rest = matching(g) - 1;
+            cells[i] = null; cells[i] = draw(rest < ArticleHunt.MIN_MATCH ? g : null);
+            render(i);
+          } else {
+            wrong++; lockUntil = Date.now() + (snap.room.data.pen || ArticleHunt.PENALTY_SECONDS) * 1000;
+          }
+          tick();
+        }
+
+        // coming back to the page (reload) re-joins as the same player
+        if (fromUrl) ready.then(function () { return me.resume(fromUrl); }).then(function (ok) { if (ok) enter(); });
+      })();
+    </script>
+  </body>
+</html>
