@@ -9,7 +9,7 @@
   'use strict';
 
   var ART = { m: 'der', f: 'die', n: 'das' };
-  var GRID = 20, MIN_MATCH = 4;                      // words on a phone's grid; at least this many always match the article
+  var GRID = 20, MIN_MATCH = 4, RESHUFFLE = 3;                      // words on a phone's grid; at least this many always match the article
   var ART_SECONDS = 15, PENALTY_SECONDS = 3;         // the timing of a round (the host puts them into the room's data)
 
   function loadBank() {
@@ -45,19 +45,38 @@
 
   // a short "pop" for a hit, made by the browser (no sound file): a tone that falls from 700 to 220 Hz in about 90 ms
   var audio = null;
+  function ctx() {
+    var AC = global.AudioContext || global.webkitAudioContext;
+    if (!AC) return null;
+    if (!audio) audio = new AC();
+    return audio;
+  }
+  function play(c) {
+    var t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(220, t + 0.09);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.11);
+  }
   function pop() {
     try {
-      var AC = global.AudioContext || global.webkitAudioContext;
-      if (!AC) return;
-      if (!audio) audio = new AC();
-      if (audio.state === 'suspended') audio.resume();
-      var t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(220, t + 0.09);
-      g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-      o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.11);
+      var c = ctx();
+      if (!c) return;
+      if (c.state === 'running') play(c);
+      else c.resume().then(function () { play(c); }, function () {});
     } catch (e) {}
   }
+  // Safari and phones keep sound off until a tap or click: the first one (the Start button, say) switches the audio on.
+  function unlock() {
+    try {
+      var c = ctx();
+      if (!c) return;
+      if (c.state !== 'running') c.resume();
+      var b = c.createBuffer(1, 1, 22050), src = c.createBufferSource();       // a silent sample, as iOS wants
+      src.buffer = b; src.connect(c.destination); src.start(0);
+    } catch (e) {}
+  }
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlock, { passive: true }); });
 
-  global.ArticleHunt = { pop: pop, ART: ART, GRID: GRID, MIN_MATCH: MIN_MATCH, ART_SECONDS: ART_SECONDS, PENALTY_SECONDS: PENALTY_SECONDS,
+  global.ArticleHunt = { pop: pop, ART: ART, GRID: GRID, MIN_MATCH: MIN_MATCH, RESHUFFLE: RESHUFFLE, ART_SECONDS: ART_SECONDS, PENALTY_SECONDS: PENALTY_SECONDS,
     loadBank: loadBank, genderMap: genderMap, makeSeq: makeSeq, slotAt: slotAt, evaluate: evaluate };
 })(window);

@@ -128,6 +128,14 @@
           return p[Math.floor(Math.random() * p.length)];
         }
         function matching(g) { return cells.filter(function (w) { return w && w[1] === g; }).length; }
+        function reshuffle(skip) {                  // after a hit, a few other words change quietly too, so a change tells nothing
+          var idx = [];
+          cells.forEach(function (w, i) { if (i !== skip) idx.push(i); });
+          for (var k = 0; k < ArticleHunt.RESHUFFLE; k++) {
+            var j = idx.splice(Math.floor(Math.random() * idx.length), 1)[0];
+            cells[j] = draw(null, cells[j][1]);
+          }
+        }
         function ensure(g, skip) {                  // quietly turn other words into matching ones when they run low
           while (matching(g) < ArticleHunt.MIN_MATCH) {
             var idx = []; cells.forEach(function (w, i) { if (w[1] !== g && i !== skip) idx.push(i); });
@@ -196,6 +204,7 @@
             score++; ArticleHunt.pop();
             var old = cells[i][1];
             cells[i] = null; cells[i] = draw(null, old);       // the new word never has the gender of the one it replaces
+            reshuffle(i);
             ensure(g, i);
             render(i);
           } else {

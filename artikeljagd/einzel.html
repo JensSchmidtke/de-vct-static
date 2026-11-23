@@ -96,7 +96,7 @@
     <script>
       (function () {
         // The timing is set here; change the numbers to try other values.
-        var CFG = { ROUND: 60, ARTICLE: 15, PENALTY: 3, COLS: 5, ROWS: 4, MIN_MATCH: 4 };
+        var CFG = { ROUND: 60, ARTICLE: 15, PENALTY: 3, COLS: 5, ROWS: 4, MIN_MATCH: 4, RESHUFFLE: 3 };
         var ART = { m: 'der', f: 'die', n: 'das' };
         var $ = function (id) { return document.getElementById(id); };
         var bank = [], level = 6, cells = [], gender = 'm', score = 0, wrong = 0;
@@ -137,6 +137,14 @@
           ensure(null);
           render();
         }
+        function reshuffle(skip) {                   // after a hit, a few other words change quietly too, so a change tells nothing
+          var idx = [];
+          cells.forEach(function (w, i) { if (i !== skip) idx.push(i); });
+          for (var k = 0; k < CFG.RESHUFFLE; k++) {
+            var j = idx.splice(Math.floor(Math.random() * idx.length), 1)[0];
+            cells[j] = draw(null, cells[j][1]);
+          }
+        }
         function ensure(skip) {                      // make sure there is something to find: quietly turn other words into matching ones
           while (matching() < CFG.MIN_MATCH) {
             var idx = []; cells.forEach(function (w, i) { if (w[1] !== gender && i !== skip) idx.push(i); });
@@ -155,6 +163,7 @@
             var old = cells[i][1];
             cells[i] = null;
             cells[i] = draw(null, old);             // the new word never has the gender of the one it replaces
+            reshuffle(i);
             ensure(i);                              // and if matching words are running out, another word changes without anyone noticing
             render(i);
           } else {
