@@ -43,6 +43,21 @@
     });
   }
 
-  global.ArticleHunt = { ART: ART, GRID: GRID, MIN_MATCH: MIN_MATCH, ART_SECONDS: ART_SECONDS, PENALTY_SECONDS: PENALTY_SECONDS,
+  // a short "pop" for a hit, made by the browser (no sound file): a tone that falls from 700 to 220 Hz in about 90 ms
+  var audio = null;
+  function pop() {
+    try {
+      var AC = global.AudioContext || global.webkitAudioContext;
+      if (!AC) return;
+      if (!audio) audio = new AC();
+      if (audio.state === 'suspended') audio.resume();
+      var t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(220, t + 0.09);
+      g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.11);
+    } catch (e) {}
+  }
+
+  global.ArticleHunt = { pop: pop, ART: ART, GRID: GRID, MIN_MATCH: MIN_MATCH, ART_SECONDS: ART_SECONDS, PENALTY_SECONDS: PENALTY_SECONDS,
     loadBank: loadBank, genderMap: genderMap, makeSeq: makeSeq, slotAt: slotAt, evaluate: evaluate };
 })(window);

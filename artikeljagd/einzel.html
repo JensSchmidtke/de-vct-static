@@ -6,6 +6,7 @@
     <title>Article Hunt | Deutsch mit Jens</title>
     <link rel="stylesheet" href="../room-kit/games.css" />
     <script src="/stats.js"></script>
+    <script src="articles.js"></script>
     <style>
       .ah h1 { font-family: "Fraunces", serif; margin-bottom: 0.5rem; }
       .ah-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.2rem; box-shadow: 0 6px 18px var(--shadow); max-width: 460px; }
@@ -150,7 +151,7 @@
         function tap(i) {
           if (!running || Date.now() < lockUntil) return;
           if (cells[i][1] === gender) {
-            score++; $('score').textContent = score;
+            score++; $('score').textContent = score; ArticleHunt.pop();
             var old = cells[i][1];
             cells[i] = null;
             cells[i] = draw(null, old);             // the new word never has the gender of the one it replaces

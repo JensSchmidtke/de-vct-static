@@ -193,7 +193,7 @@
           var g = currentGender(), w = cells[i];
           try { me.submit({ w: w[0], s: slot }, { quiet: true }); } catch (e) { return; }
           if (w[1] === g) {
-            score++;
+            score++; ArticleHunt.pop();
             var old = cells[i][1];
             cells[i] = null; cells[i] = draw(null, old);       // the new word never has the gender of the one it replaces
             ensure(g, i);
