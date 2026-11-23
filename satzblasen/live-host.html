@@ -18,6 +18,8 @@
       .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
       .btn-row .button { cursor: pointer; font-family: inherit; }
       .note { font-size: 0.82rem; color: var(--muted); margin-top: 0.6rem; }
+      .check-row { display: flex !important; align-items: center; gap: 0.5rem; font-weight: 500; cursor: pointer; }
+      .check-row input { width: auto !important; }
       .stepper { display: flex; align-items: center; gap: 0.6rem; }
       .stepper output { min-width: 4rem; text-align: center; font-size: 1.2rem; font-weight: 600; }
       .stepper .button { cursor: pointer; font-family: inherit; min-width: 2.4rem; }
@@ -98,6 +100,8 @@
               <output id="t-val">3:00</output>
               <button class="button small ghost" id="t-plus" type="button" aria-label="10 seconds more">+</button>
             </div>
+            <label class="check-row"><input type="checkbox" id="hints" /> Help for beginners</label>
+            <p class="note" style="margin-top:0.2rem">The words a sentence can start with are coloured, and a Tip button shows the words that can come next. A word that was tipped scores no point.</p>
             <div class="btn-row"><button class="button" id="create" type="button">Open the room</button></div>
             <p class="note">Everyone plays on their own phone, on the same grid at the same time, and connects neighbouring bubbles into sentences. The player with the most words connected wins the round; ties go to fewer wrong attempts, then to the earlier finish. Students join with a nickname, not their real name. When you end the game, the room and everything in it is deleted.</p>
           </div>
@@ -171,7 +175,7 @@
           $("create").disabled = true;
           SentenceLive.loadPool(file).then(function (p) {
             pool = p;
-            return host.create($("rname").value.trim() || "Room", GAME, { file: file, duration: cfg.duration, grids: {} }).then(open);
+            return host.create($("rname").value.trim() || "Room", GAME, { file: file, duration: cfg.duration, hints: $("hints").checked, grids: {} }).then(open);
           }).catch(function () { alert("Could not create the room. Check the connection."); }).then(function () { $("create").disabled = false; });
         });
 

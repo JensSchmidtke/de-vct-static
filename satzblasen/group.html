@@ -55,6 +55,8 @@
       #board .bubble rect { fill: #fffaf3; stroke: #d7c8b8; stroke-width: 3; transition: fill 0.15s, stroke 0.15s; }
       #board .bubble:hover rect, #board .bubble:focus-visible rect { stroke: #b66a3c; }
       #board .bubble.sel rect { fill: #f6dfd0; stroke: #b66a3c; }
+      #board .bubble.start rect { fill: #e6f1da; stroke: #6a9a4f; stroke-width: 4; }
+      #board .bubble.tip rect { fill: #dcebf6; stroke: #3d7a99; stroke-width: 5; }
       #board .bubble.used { cursor: default; }
       #board .bubble.used rect { fill: #e6e1d8; stroke: #cfc7ba; }
       #board text { font-family: "Space Grotesk", sans-serif; font-size: 19px; font-weight: 500; fill: #1b1a16; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
@@ -125,6 +127,8 @@
               <output id="timer-val">30 s</output>
               <button class="button small ghost" id="timer-plus" type="button" aria-label="10 seconds more">+</button>
             </div>
+            <label class="check-row"><input type="checkbox" id="hints-on" /> Help for beginners</label>
+            <p class="note" style="margin-top:0.2rem">The words a sentence can start with are coloured. A Tip button shows the words that can come next; a word that was tipped scores no point.</p>
             <div class="btn-row"><button class="button" id="start" type="button">Start round</button></div>
             <p class="note">A correct sentence scores one point per word. A wrong attempt is a strike and ends the turn; a team with three strikes is out for this round. A sentence that is not in the list can be accepted by the teacher anyway.</p>
           </div>
@@ -138,6 +142,7 @@
                 <p class="line" id="line" aria-live="polite"></p>
                 <div class="btn-row" id="controls">
                   <button class="button small" id="check" type="button">Check sentence</button>
+                  <button class="button small ghost" id="tip" type="button" hidden>Tip</button>
                   <button class="button small ghost" id="clear" type="button">Clear</button>
                   <button class="button small ghost" id="endround" type="button">End round</button>
                 </div>
@@ -162,9 +167,11 @@
       </div>
     </footer>
 
+    <script src="hints.js"></script>
     <script>
       (function () {
         var $ = function (id) { return document.getElementById(id); };
+        var tips = new Hints.Tips(), hintsOn = false;
         var NS = "http://www.w3.org/2000/svg", CELL = 100, MAX_STRIKES = 3;
         var TEAM_COLORS = ["#b66a3c", "#3d7a99", "#5a8f5a", "#9a6aa8", "#b8902f", "#c0506a"];
         var timer = { on: false, secs: 30, left: 0, last: 0, running: false, id: null };
@@ -240,6 +247,7 @@
           g = { rows: pool.rows, cols: pool.cols, cells: pool.layouts[k].cells, valid: pool.layouts[k].valid, solution: pool.layouts[k].solution };
           validSet = {};
           g.valid.forEach(function (p) { validSet[p.join(",")] = true; });
+          tips = new Hints.Tips(g.valid);
         }
 
         function startRound() {
@@ -264,12 +272,12 @@
         }
 
         function award(path, accepted) {
-          var t = teams[active];
-          t.points += path.length; t.round += path.length;
+          var t = teams[active], pts = path.length - (hintsOn ? tips.cost(path.length) : 0);
+          t.points += pts; t.round += pts;
           path.forEach(function (i) { used[i] = true; });
           found.push({ path: path.slice(), team: active, accepted: accepted });
-          lastLog = "<strong>" + esc(t.name) + "</strong>: " + esc(cap(words(path))) + " (+" + path.length + ")" + (accepted ? " · accepted by the teacher" : "");
-          chain = []; pending = null;
+          lastLog = "<strong>" + esc(t.name) + "</strong>: " + esc(cap(words(path))) + " (+" + pts + ")" + (hintsOn && pts < path.length ? " · tip used" : "") + (accepted ? " · accepted by the teacher" : "");
+          chain = []; pending = null; tips.reset();
           if (used.every(Boolean)) { finish("All words are used.", true); return; }
           noMore = !canFormSentence();
           nextTeam(); render(); startTurnTimer();
@@ -281,7 +289,7 @@
           var msg = "<strong>" + esc(t.name) + "</strong>: " + (why || "not accepted") + " · strike " + t.strikes + " of " + MAX_STRIKES;
           if (t.strikes >= MAX_STRIKES) { t.out = true; msg += " · out for this round"; }
           lastLog = '<span class="bad">' + msg + "</span>";
-          chain = []; pending = null;
+          chain = []; pending = null; tips.reset();
           if (teams.every(function (x) { return x.out; })) { finish(teams.length === 2 ? "Both teams are out." : "All teams are out.", true); return; }
           nextTeam(); render(); startTurnTimer();
         }
@@ -317,10 +325,11 @@
           if (used[i] || over) return;
           if (pending) { chain = pending; pending = null; resumeTimer(); }   // tapping a bubble reopens the chain for editing
           var last = chain[chain.length - 1], at = chain.indexOf(i);
+          tips.hide();
           if (i === last) { chain.pop(); render(); return; }   // tapping the last bubble takes it back; only the button confirms
           if (at >= 0) chain = chain.slice(0, at + 1);
           else if (chain.length && adjacent(last, i)) chain.push(i);
-          else chain = [i];
+          else { chain = [i]; tips.reset(); }
           render();
         }
 
@@ -340,10 +349,11 @@
           found.forEach(function (f) {
             svg.appendChild(el("polyline", { "class": "link", points: pts(f.path), stroke: TEAM_COLORS[f.team], "stroke-width": 14, "stroke-opacity": 0.55 }));
           });
-          var shown = pending || chain;
+          var shown = pending || chain, starts = hintsOn ? tips.starts(used) : {};
           if (shown.length > 1) svg.appendChild(el("polyline", { "class": "link", points: pts(shown), stroke: TEAM_COLORS[active], "stroke-width": 8 }));
           g.cells.forEach(function (w, i) {
-            var grp = el("g", { "class": "bubble" + (used[i] ? " used" : "") + (shown.indexOf(i) >= 0 ? " sel" : ""), tabindex: used[i] ? -1 : 0, role: "button", "aria-label": w });
+            var grp = el("g", { "class": "bubble" + (used[i] ? " used" : "") + (shown.indexOf(i) >= 0 ? " sel" : "") +
+              (!used[i] && shown.indexOf(i) < 0 && hintsOn && tips.shown[i] ? " tip" : "") + (!used[i] && shown.indexOf(i) < 0 && hintsOn && starts[i] ? " start" : ""), tabindex: used[i] ? -1 : 0, role: "button", "aria-label": w });
             var bw = curCw - 12, bh = 88, avail = bw - 16, cap = curCw > 100 ? 30 : 19;
             var min = curCw > 100 ? 22 : 0;   // never smaller than this on a wide screen, so it can be read from the back
             var fs = Math.min(cap, avail / (w.length * 0.62));
@@ -382,13 +392,14 @@
           $("controls").hidden = !!pending || over;
           $("check").disabled = chain.length < 2;
           $("clear").disabled = !chain.length;
+          $("tip").hidden = !hintsOn; $("tip").disabled = !chain.length;
         }
 
         /* ---------- wiring ---------- */
 
         $("start").addEventListener("click", function () {
           teams = []; for (var k = 0; k < +$("nteams").value; k++) teams.push({ name: ($("t" + k).value.trim() || "Team " + (k + 1)), points: 0, round: 0, strikes: 0, out: false });
-          starter = 0;
+          starter = 0; hintsOn = $("hints-on").checked;
           var file = $("level").value;
           if (poolFile === file && pool) { startRound(); return; }
           $("start").disabled = true;
@@ -397,7 +408,13 @@
           }).catch(function () { alert("Could not load the grids."); }).then(function () { $("start").disabled = false; });
         });
         $("check").addEventListener("click", check);
-        $("clear").addEventListener("click", function () { if (pending) resumeTimer(); chain = []; pending = null; render(); });
+        $("clear").addEventListener("click", function () { if (pending) resumeTimer(); chain = []; pending = null; tips.reset(); render(); });
+        $("tip").addEventListener("click", function () {
+          if (over || pending || !chain.length) return;
+          var next = tips.ask(chain, used);
+          render();
+          if (!next.length) $("line").textContent = "No word from the list fits here.";
+        });
         $("accept").addEventListener("click", function () { if (pending) award(pending.slice(), true); });
         $("wrong").addEventListener("click", function () { if (pending) strike(); });
         $("back").addEventListener("click", function () { if (pending) { chain = pending; pending = null; resumeTimer(); render(); } });

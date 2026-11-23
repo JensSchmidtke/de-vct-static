@@ -38,7 +38,7 @@
     layout.valid.forEach(function (p) { valid[p.join(',')] = true; });
     snap.decisions.forEach(function (d) { if (d.round === round) dec[d.key] = d.accepted; });
     var rows = {}, rejected = {};
-    snap.players.forEach(function (p) { rows[p.id] = { player: p, accepted: [], times: [], used: {}, wrong: 0, last: null }; });
+    snap.players.forEach(function (p) { rows[p.id] = { player: p, accepted: [], tips: [], times: [], used: {}, wrong: 0, last: null }; });
     snap.submissions.slice().sort(function (a, b) { return a.at - b.at; }).forEach(function (s) {
       var r = rows[s.playerId];
       if (!r || s.round !== round || (endsAt && s.at > endsAt + 2500)) return;
@@ -47,7 +47,7 @@
         var key0 = Array.isArray(pl.undo) ? pl.undo.join(',') : null, at = -1;
         r.accepted.forEach(function (p, i) { if (p.join(',') === key0) at = i; });
         if (at >= 0) {
-          r.accepted.splice(at, 1)[0].forEach(function (c) { delete r.used[c]; }); r.times.splice(at, 1);
+          r.accepted.splice(at, 1)[0].forEach(function (c) { delete r.used[c]; }); r.times.splice(at, 1); r.tips.splice(at, 1);
           r.last = r.times.length ? r.times[r.times.length - 1] : null;
         }
         return;
@@ -56,6 +56,7 @@
       var text = textOf(layout, pl.path), key = pl.path.join(',');
       if ((valid[key] && dec[text] !== false) || dec[text] === true) {
         r.accepted.push(pl.path.slice()); r.times.push(s.at - startedAt);
+        r.tips.push(snap.room.data.hints ? Math.max(0, Math.min(pl.path.length - 1, pl.tips | 0)) : 0);   // a tipped word scores no point
         pl.path.forEach(function (c) { r.used[c] = true; });
         r.last = s.at - startedAt;
       } else {
@@ -66,9 +67,9 @@
     });
     var out = Object.keys(rows).map(function (k) {
       var r = rows[k], pts = 0;
-      r.accepted.forEach(function (p) { pts += p.length; });
+      r.accepted.forEach(function (p, i) { pts += p.length - r.tips[i]; });
       return { player: r.player, points: pts, sentences: r.accepted.length, wrong: r.wrong, last: r.last, accepted: r.accepted, used: r.used,
-               solved: pts === layout.cells.length };
+               solved: Object.keys(r.used).length === layout.cells.length };
     });
     out.sort(function (a, b) {
       return b.points - a.points || a.wrong - b.wrong || (a.last == null) - (b.last == null) || a.last - b.last || a.player.nickname.localeCompare(b.player.nickname);
@@ -96,9 +97,9 @@
     if (!r.width || !r.height) return 130;
     return Math.max(120, Math.min(190, Math.round(r.width / r.height * this.rows * CELL / this.cols)));
   };
-  Board.prototype.render = function (used, path, groups) {
+  Board.prototype.render = function (used, path, groups, marks) {
     var svg = this.svg, self = this, cols = this.cols, rows = this.rows;
-    used = used || {}; path = path || [];
+    used = used || {}; path = path || []; marks = marks || {};
     svg.innerHTML = '';
     this.cw = this.cellWidth();
     var cw = this.cw;
@@ -112,7 +113,8 @@
     if (path.length > 1) svg.appendChild(el('polyline', { points: pts(path), fill: 'none', stroke: '#b66a3c', 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'pointer-events': 'none' }));
     this.layout.cells.forEach(function (w, i) {
       var isUsed = !!used[i], sel = path.indexOf(i) >= 0;
-      var g = el('g', { 'class': 'bubble' + (isUsed ? ' used' : '') + (sel ? ' sel' : ''), role: self.onTap ? 'button' : 'img', 'aria-label': w });
+      var g = el('g', { 'class': 'bubble' + (isUsed ? ' used' : '') + (sel ? ' sel' : '') + (!isUsed && !sel && marks.tip && marks.tip[i] ? ' tip' : '') + (!isUsed && !sel && marks.start && marks.start[i] ? ' start' : ''),
+        role: self.onTap ? 'button' : 'img', 'aria-label': w });
       var bw = cw - 12, bh = 88, avail = bw - 16, cap = cw > 100 ? 30 : 19, minFs = cw > 100 ? 22 : 0;
       g.appendChild(el('rect', { x: cx(i) - bw / 2, y: cy(i) - bh / 2, width: bw, height: bh, rx: bh / 2 }));
       var fs = Math.min(cap, avail / (w.length * 0.62)), fs2 = Math.min(cw > 100 ? 26 : 15, avail / ((w.length / 2 + 1) * 0.62));
